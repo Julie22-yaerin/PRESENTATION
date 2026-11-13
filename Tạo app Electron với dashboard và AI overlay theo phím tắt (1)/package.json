@@ -1,0 +1,110 @@
+{
+  "name": "ai-bubble",
+  "productName": "AI Bubble",
+  "version": "0.1.0",
+  "description": "Electron desktop app: dashboard plus a floating rounded AI bubble that listens and sees your screen when you tap Shift / Command / Fn.",
+  "main": "out/main/index.js",
+  "author": "AI Bubble",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
+    "smoke": "node scripts/smoke.mjs",
+    "ui:shots": "node scripts/shots.mjs",
+    "icons": "python3 scripts/make_icons.py",
+    "package": "electron-builder"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "electron": "^45.3.1",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "uiohook-napi": "^1.5.5"
+  },
+  "build": {
+    "appId": "com.aibubble.desktop",
+    "productName": "AI Bubble",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "build/tray.png",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/uiohook-napi/**"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "AI Bubble ghi âm sau khi bạn bấm phím nóng, để hiểu câu hỏi về nội dung trên màn hình.",
+        "NSScreenCaptureUsageDescription": "AI Bubble chụp màn hình đúng khoảnh khắc bạn bấm phím nóng.",
+        "LSUIElement": false,
+        "NSHighResolutionCapable": true
+      }
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    },
+    "linux": {
+      "icon": "build/icons",
+      "category": "Utility",
+      "synopsis": "Floating AI bubble that listens and sees your screen",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  }
+}
