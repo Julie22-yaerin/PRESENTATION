@@ -197,7 +197,7 @@ export const en = {
   'gen.best': 'right for this machine',
   'gen.soon': 'coming soon',
   'gen.notify': 'notify me',
-  'gen.req': 'needs macOS 14.2 or newer.',
+  'gen.req': 'needs macOS {version} or newer.',
   'gen.status.mac': 'you are on a mac — the first button is the build for this machine.',
   'gen.status.windows': 'you are on windows — the installer is listed below as soon as it is published.',
   'gen.status.unknown': 'open this page on the computer you will rehearse on.',

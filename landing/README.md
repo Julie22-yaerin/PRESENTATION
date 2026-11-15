@@ -68,9 +68,10 @@ mới mang tên như trên. Sau khi upload, copy từng `plannedUrl` sang `url`,
 `bash landing/scripts/check-downloads.sh` cho tới khi mọi kênh in `LIVE`, rồi commit.
 Không phải sửa code hay template nào.
 
-Máy người xem tự được nhận ra: `lib/downloads.js` đọc `userAgent` +
-`navigator.userAgentData`, tô dấu "hợp với máy bạn" lên đúng bản, và in một dòng trạng thái
-bằng ngôn ngữ đang hiện.
+Máy người xem tự được nhận ra: `lib/downloads.js` đọc `userAgentData.platform`,
+`navigator.platform` và `userAgent` (nên Safari trên Mac và Firefox trên Windows vẫn đúng),
+tô dấu "hợp với máy bạn" lên đúng bản kể cả khi bản đó chưa phát hành, và in một dòng trạng
+thái bằng ngôn ngữ đang hiện. iPhone/Android được xếp là `other`: app chỉ có bản desktop.
 
 ## Cấu trúc
 

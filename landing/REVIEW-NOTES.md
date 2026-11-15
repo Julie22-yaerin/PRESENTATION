@@ -38,6 +38,39 @@ Ngày: 2026-11-15. Phạm vi: thư mục `landing/` + `.github/workflows/pages.y
   `<span class="hl">` thì tách thành nhiều khoá (đã áp cho `does.h1..h3`, `room.h1/h2`,
   `dl.sub1/sub2`, `m.note1/2`, `does.1a/1b`).
 
+## Cách kiểm tra nhận diện máy (đã chạy, 7/7 PASS)
+
+`--user-agent` **không đủ**: Chrome vẫn trả `navigator.platform` và `userAgentData` của máy
+thật, nên lúc đầu mọi giả lập đều ra "khác". Cách đúng: chép `landing/` ra thư mục tạm, chèn
+một `<script>` nhỏ **trước** `app.js` để `Object.defineProperty(Navigator.prototype, ...)`
+cho `userAgent`, `platform`, `userAgentData`, rồi `chromium --dump-dom` và đọc `data-best`
+của từng nút. Lưu ý cú pháp: giá trị object phải viết trong ngoặc
+`() => ({'platform': 'macOS'})`, nếu không nó là một block và cả script chết — lỗi này đã
+làm 2 case báo sai trước khi sửa.
+
+Kết quả trên bản local (giống hệt bản live):
+
+| Giả lập | Nút được tô ★ | Thứ tự | Dòng trạng thái |
+| --- | --- | --- | --- |
+| Chrome/macOS | Apple Silicon | mac-arm → mac-intel → win → repo | "Bạn đang dùng Mac… Cần macOS 14.2 trở lên." |
+| Safari/macOS (không có userAgentData) | Apple Silicon | như trên | như trên |
+| Chrome/Windows | Windows | win → mac-arm → mac-intel → repo | "Bạn đang dùng Windows…" |
+| Firefox/Windows | Windows | như trên | như trên |
+| iPadOS | mã nguồn & bản thử | repo trước | "Mở trang này trên chính máy bạn…" |
+| Android (Pixel) | mã nguồn & bản thử | repo trước | như trên |
+| Linux desktop | mã nguồn & bản thử | repo trước | như trên |
+
+Ba lỗi bắt được từ bảng này và đã sửa: (1) nút ★ chỉ được chọn khi `url` đã có ⇒ người Mac
+không thấy nút nào được gợi ý dù dòng trạng thái nói "nút đầu tiên là của bạn"; (2) bản
+sắp-có không bao giờ được ★; (3) gộp chuỗi yêu cầu macOS in "14.2" hai lần. Thêm: iPhone/iPad
+trước đây bị tính là macOS ⇒ nay xếp là `other`.
+
+## Mặc định ngôn ngữ
+
+`i18n.js` ưu tiên `?lang=` → lựa chọn đã lưu → `navigator.language`. Trình duyệt tiếng Anh
+mở `/` sẽ thấy **bản Anh**, không phải bản Việt; `?lang=vi` luôn ra Việt. Đây là hành vi có
+chủ đích (đã kiểm bằng `--dump-dom`: `<html lang>` và toàn bộ nhãn đổi theo).
+
 ## Trạng thái link tải (chính xác tại ngày trên)
 
 - Repo `Julie22-yaerin/PRESENTATION` **chưa có Release nào** ⇒ `releases/latest/download/...`
@@ -76,7 +109,12 @@ Ngày: 2026-11-15. Phạm vi: thư mục `landing/` + `.github/workflows/pages.y
 ## Việc còn mở
 
 - Thay 10 dòng trích dẫn bằng lời thật (hiện ghi rõ là "ghi chú từ nhóm thử nội bộ").
-- Bật GitHub Pages: Settings → Pages → Source = **GitHub Actions**, rồi push `landing/**`.
+- ~~Bật GitHub Pages~~ **đã bật** bằng `POST /repos/Julie22-yaerin/PRESENTATION/pages`
+  `{"build_type":"workflow"}` (2026-11-15). Run đầu `43717370399` xanh, trang live ở
+  `https://julie22-yaerin.github.io/PRESENTATION/`. Từ đây mỗi push chạm `landing/**` tự đăng.
+- Điền `url` cho ba kênh khi Release có asset đúng tên (xem mục trạng thái link tải).
 - Khi đổi sang domain riêng: sửa `canonical`, 3 `hreflang`, `og:url`, `og:image`
   trong `index.html` (hiện trỏ `julie22-yaerin.github.io/PRESENTATION/`).
-- Chưa test tương tác thật (bấm VI/EN, cuộn) trên thiết bị — mới kiểm bằng ảnh.
+- Chưa test tương tác thật (bấm VI/EN, cuộn, bấm nút tải) trên thiết bị — mới kiểm bằng
+  ảnh và `--dump-dom`.
+- Trang không có analytics hay SEO động: `sitemap.xml` để trống theo thoả thuận.

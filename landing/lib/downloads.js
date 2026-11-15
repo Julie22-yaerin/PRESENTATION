@@ -53,13 +53,23 @@ function safeUrl(value) {
   }
 }
 
+/**
+ * Desktop only. There is no iOS or Android build, so a phone must never be told
+ * "the first button is yours" — a desktop Mac reports MacIntel, an iPhone
+ * reports iPhone, and userAgentData.mobile splits the desktop-mode spoof.
+ */
 function detectPlatform() {
   const data = navigator.userAgentData;
-  const name = (data?.platform || navigator.platform || navigator.userAgent || '').toLowerCase();
-  if (name.includes('mac') || name.includes('iphone') || name.includes('ipad')) {
+  const hints = [data?.platform, navigator.platform, navigator.userAgent]
+    .map((value) => String(value ?? '').toLowerCase())
+    .join(' ');
+  if (data?.mobile === true || /iphone|ipad|ipod|android/.test(hints)) {
+    return 'other';
+  }
+  if (hints.includes('mac')) {
     return 'macos';
   }
-  if (name.includes('win')) {
+  if (hints.includes('win')) {
     return 'windows';
   }
   return 'other';
@@ -106,16 +116,31 @@ async function loadConfig() {
   }
 }
 
+/**
+ * The tile that matches this visitor's machine.
+ *
+ * A published build wins the star. But while a channel is still pending
+ * (`url` empty), an unmarked page would contradict the status line, which
+ * already tells the visitor that the first button is theirs — so the star
+ * stays on the right *machine*, coming soon or not. Apple Silicon is assumed
+ * when WebGL tells us nothing, because that is the common Mac today; the Intel
+ * tile sits right next to it, labelled.
+ */
 function bestChannelId(config, platform, arch) {
-  const channels = config.channels.filter((channel) => (channel.platform ?? 'macos') === platform);
+  const mine = config.channels.filter((channel) => (channel.platform ?? 'macos') === platform);
+  if (mine.length === 0) {
+    return '';
+  }
+  const live = (channel) => safeUrl(channel.url);
   if (platform === 'macos' && arch !== 'unknown') {
-    const exact = channels.find((channel) => channel.arch === arch && safeUrl(channel.url));
+    const exact = mine.find((channel) => channel.arch === arch && live(channel))
+      || mine.find((channel) => channel.arch === arch);
     if (exact) {
       return exact.id;
     }
   }
-  const any = channels.find((channel) => safeUrl(channel.url));
-  return any ? any.id : '';
+  const anyLive = mine.find(live);
+  return (anyLive ?? mine[0]).id;
 }
 
 function buildItem(channel, config, isBest) {
@@ -146,6 +171,9 @@ function buildItem(channel, config, isBest) {
   } else {
     const soon = channel.plannedUrl ? `${t('gen.soon')} · ${channel.plannedUrl.split('/download/').pop()}` : t('gen.soon');
     notes.push(fallback ? `${soon} · ${t('gen.notify')}` : soon);
+    if (isBest) {
+      notes.push(`★ ${t('gen.best')}`);
+    }
   }
   meta.textContent = notes.join(' · ');
 
@@ -174,7 +202,8 @@ function statusLine(config, platform) {
     return t('gen.loadError');
   }
   if (platform === 'macos') {
-    return `${t('gen.status.mac')} ${t('gen.req')} ${config.requirements?.macos ?? '14.2'}.`;
+    const version = config.requirements?.macos ?? '14.2';
+    return `${t('gen.status.mac')} ${t('gen.req').replace('{version}', version)}`;
   }
   if (platform === 'windows') {
     return t('gen.status.windows');

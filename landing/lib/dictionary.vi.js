@@ -12,7 +12,7 @@ export const vi = {
   'gen.best': 'hợp với máy bạn',
   'gen.soon': 'sắp có',
   'gen.notify': 'báo cho tôi',
-  'gen.req': 'cần macOS 14.2 trở lên.',
+  'gen.req': 'Cần macOS {version} trở lên.',
   'gen.status.mac': 'Bạn đang dùng Mac — nút đầu tiên là bản cho đúng máy này.',
   'gen.status.windows': 'Bạn đang dùng Windows — file cài sẽ hiện ở nút dưới ngay khi có bản phát hành.',
   'gen.status.unknown': 'Mở trang này trên chính máy bạn sẽ dùng để luyện tập.',
