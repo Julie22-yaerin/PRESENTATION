@@ -108,7 +108,26 @@ async function handleTranscribeToken(env: Env): Promise<Response> {
 
 async function handleTTS(request: Request, env: Env): Promise<Response> {
   const body = await request.text();
-  const voiceId = env.ELEVENLABS_VOICE_ID;
+  // The Lyceum gives every audience agent its own voice, so the app may name one
+  // in the request body. Anything absent falls back to the configured default,
+  // which keeps the original single-voice clients working unchanged.
+  let voiceId = env.ELEVENLABS_VOICE_ID;
+  let forwardBody = body;
+
+  try {
+    const parsedBody = JSON.parse(body) as Record<string, unknown>;
+    const requestedVoiceID = parsedBody["voice_id"];
+
+    if (typeof requestedVoiceID === "string" && requestedVoiceID.trim().length > 0) {
+      voiceId = requestedVoiceID.trim();
+      // ElevenLabs rejects unknown body fields, so this routing hint is stripped
+      // before the payload goes upstream.
+      delete parsedBody["voice_id"];
+      forwardBody = JSON.stringify(parsedBody);
+    }
+  } catch {
+    // Not JSON — nothing to route on, forward the body as-is.
+  }
 
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -119,7 +138,7 @@ async function handleTTS(request: Request, env: Env): Promise<Response> {
         "content-type": "application/json",
         accept: "audio/mpeg",
       },
-      body,
+      body: forwardBody,
     }
   );
 

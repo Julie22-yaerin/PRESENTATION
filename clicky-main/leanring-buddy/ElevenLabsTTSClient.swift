@@ -30,7 +30,10 @@ final class ElevenLabsTTSClient {
 
     /// Sends `text` to ElevenLabs TTS and plays the resulting audio.
     /// Throws on network or decoding errors. Cancellation-safe.
-    func speakText(_ text: String) async throws {
+    /// Pass `voiceID` to use a voice other than the Worker's default. The Lyceum
+    /// panel does this so five audience members do not sound like one person
+    /// talking to themself five times.
+    func speakText(_ text: String, voiceID: String? = nil) async throws {
         var request = URLRequest(url: proxyURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -45,7 +48,12 @@ final class ElevenLabsTTSClient {
             ]
         ]
 
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        var requestBody = body
+        if let voiceID, !voiceID.isEmpty {
+            requestBody["voice_id"] = voiceID
+        }
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
         let (data, response) = try await session.data(for: request)
 

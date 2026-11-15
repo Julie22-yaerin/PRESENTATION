@@ -170,6 +170,9 @@ struct LyceumCoachReport: Codable {
     let slideSuggestions: [LyceumSlideSuggestion]? = nil
     /// Two sentences written for the ear; this is what gets spoken aloud.
     let spokenFeedback: String? = nil
+    /// Filled after the audience Q&A round, not by the model that graded the talk.
+    /// Optional with a default so reports written before the panel existed still decode.
+    var defenseScore: LyceumScore? = nil
     /// Set when the reply was not machine-readable and the raw prose was kept.
     var degradedToFallback: Bool? = nil
 
@@ -236,7 +239,11 @@ struct LyceumSavedSession: Codable {
     let durationSeconds: TimeInterval
     let slideCount: Int
     let transcript: String
-    let report: LyceumCoachReport
+    /// Mutable because the Q&A round happens after the session was first graded and
+    /// saved, and its verdict belongs in the same record.
+    var report: LyceumCoachReport
+    /// How the run actually ended: a tap, a farewell slide, or heard closing words.
+    var endedBy: String? = nil
 }
 
 // MARK: - Exporting
@@ -251,7 +258,8 @@ enum LyceumReportExporter {
         var markdownLines: [String] = []
         markdownLines.append("# The Lyceum — \(savedSession.mode) session")
         markdownLines.append("")
-        markdownLines.append("_\(dateFormatter.string(from: savedSession.startedAt)) · \(formatDuration(savedSession.durationSeconds)) · \(savedSession.slideCount) slide(s) seen_")
+        let endingNote = savedSession.endedBy.map { " · ended by \($0)" } ?? ""
+        markdownLines.append("_\(dateFormatter.string(from: savedSession.startedAt)) · \(formatDuration(savedSession.durationSeconds)) · \(savedSession.slideCount) slide(s) seen\(endingNote)_")
         markdownLines.append("")
         markdownLines.append("## Verdict")
         markdownLines.append("")
@@ -330,6 +338,13 @@ enum LyceumReportExporter {
                 }
                 markdownLines.append("")
             }
+        }
+
+        if let defenseScore = report.defenseScore {
+            markdownLines.append("## Under questioning")
+            markdownLines.append("")
+            markdownLines.append("**Defended it \(defenseScore.value)/10** — \(defenseScore.label)")
+            markdownLines.append("")
         }
 
         markdownLines.append("## Transcript")

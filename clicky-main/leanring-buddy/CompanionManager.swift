@@ -101,6 +101,9 @@ final class CompanionManager: ObservableObject {
     /// Timestamp of the current ctrl+option press, used to tell a quick tap
     /// (start/stop a practice run) from a hold (push-to-talk question).
     private var shortcutPressedAt: Date?
+    /// True while the current press is an answer to the audience panel rather than a
+    /// new question, so the release routes the words to the right place.
+    private var shortcutPressIsForPanelAnswer = false
     /// True while a press was swallowed because a coaching run owns the microphone.
     private var isHoldingShortcutForCoachSession = false
 
@@ -191,6 +194,19 @@ final class CompanionManager: ObservableObject {
         refreshAllPermissions()
         // A stored Opus preference must reach the coach too, not just push-to-talk.
         lyceumCoachManager.applyClaudeModel(selectedModel)
+
+        // The Lyceum owns its own object graph and must not hold this one, so it
+        // reaches the cursor overlay through a notification instead.
+        NotificationCenter.default.addObserver(
+            forName: .lyceumNeedsAttention,
+            object: nil,
+            queue: .main
+        ) { notification in
+            guard let message = notification.object as? String else { return }
+            Task { @MainActor in
+                self.showTransientNotice(message)
+            }
+        }
 
         print("🔑 Clicky start — accessibility: \(hasAccessibilityPermission), screen: \(hasScreenRecordingPermission), mic: \(hasMicrophonePermission), screenContent: \(hasScreenContentPermission), onboarded: \(hasCompletedOnboarding)")
         startPermissionPolling()
@@ -498,12 +514,21 @@ final class CompanionManager: ObservableObject {
 
             shortcutPressedAt = Date()
 
+            shortcutPressIsForPanelAnswer = lyceumCoachManager.isAwaitingUserAnswer
+
             // A live coaching run owns the microphone. Two AVAudioEngine instances
             // cannot capture the same device, so the press is swallowed here and the
             // release decides: a tap stops and grades the run, a hold does nothing.
-            if lyceumCoachManager.phase.isSessionLive {
+            // An answer to the room is exempt — that run is over and the mic is free.
+            if !shortcutPressIsForPanelAnswer, lyceumCoachManager.phase.isSessionLive {
                 isHoldingShortcutForCoachSession = true
                 return
+            }
+
+            if shortcutPressIsForPanelAnswer {
+                // Bring the grid back if the user dragged it away, so they can see
+                // whose question they are about to answer.
+                lyceumCoachManager.openRoom()
             }
 
             // Cancel any pending transient hide so the overlay stays visible
@@ -538,24 +563,44 @@ final class CompanionManager: ObservableObject {
 
             ClickyAnalytics.trackPushToTalkStarted()
 
+            let isAnsweringThePanel = shortcutPressIsForPanelAnswer
+
             pendingKeyboardShortcutStartTask?.cancel()
             pendingKeyboardShortcutStartTask = Task {
                 await buddyDictationManager.startPushToTalkFromKeyboardShortcut(
                     currentDraftText: "",
-                    updateDraftText: { _ in
-                        // Partial transcripts are hidden (waveform-only UI)
+                    updateDraftText: { [weak self] partialDraftText in
+                        guard isAnsweringThePanel, let self else {
+                            // Normal push-to-talk keeps its waveform-only UI.
+                            return
+                        }
+                        // The presenter sees their own words in the self tile.
+                        self.lyceumCoachManager.noteUserAnswerDraft(partialDraftText)
                     },
                     submitDraftText: { [weak self] finalTranscript in
-                        self?.lastTranscript = finalTranscript
+                        guard let self else { return }
+
+                        if isAnsweringThePanel {
+                            // Same key, same hold, different destination: these words
+                            // answer whoever asked, instead of opening a new question.
+                            self.lyceumCoachManager.receiveUserAnswer(finalTranscript)
+                            return
+                        }
+
+                        self.lastTranscript = finalTranscript
                         print("🗣️ Companion received transcript: \(finalTranscript)")
                         ClickyAnalytics.trackUserMessageSent(transcript: finalTranscript)
-                        self?.sendTranscriptToClaudeWithScreenshot(transcript: finalTranscript)
+                        self.sendTranscriptToClaudeWithScreenshot(transcript: finalTranscript)
                     }
                 )
             }
         case .released:
             let pressDuration = shortcutPressedAt.map { Date().timeIntervalSince($0) } ?? 1
             shortcutPressedAt = nil
+
+            // Read before any branch can reset it: which conversation a press was
+            // addressed to is decided on press, not on release.
+            let wasAnsweringThePanel = shortcutPressIsForPanelAnswer
 
             // Cancel the pending start task in case the user released the shortcut
             // before the async startPushToTalk had a chance to begin recording.
@@ -569,6 +614,19 @@ final class CompanionManager: ObservableObject {
                 if pressDuration < Self.shortcutTapThresholdSeconds {
                     // Tap while a run is live: stop recording and grade it.
                     lyceumCoachManager.stopSessionAndReview()
+                }
+                return
+            }
+
+            if wasAnsweringThePanel {
+                // Same key, different meaning while the room is waiting: a tap passes
+                // on the question, a hold has already been delivered by the dictation
+                // callback above.
+                if pressDuration < Self.shortcutTapThresholdSeconds {
+                    buddyDictationManager.cancelCurrentDictation(preserveDraftText: false)
+                    lyceumCoachManager.skipCurrentQuestion()
+                } else {
+                    buddyDictationManager.stopPushToTalkFromKeyboardShortcut()
                 }
                 return
             }
@@ -783,6 +841,36 @@ final class CompanionManager: ObservableObject {
     /// waits for TTS playback and any pointing animation to finish, then
     /// fades out the overlay after a 1-second pause. Cancelled automatically
     /// if the user starts another push-to-talk interaction.
+    /// One short line over the cursor overlay. A hotkey that silently refuses reads
+    /// exactly like a broken app, so a blocked gate has to be said out loud.
+    func showTransientNotice(_ message: String) {
+        transientHideTask?.cancel()
+        transientHideTask = nil
+
+        if !isOverlayVisible {
+            overlayWindowManager.hasShownOverlayBefore = true
+            overlayWindowManager.showOverlay(onScreens: NSScreen.screens, companionManager: self)
+            isOverlayVisible = true
+        }
+
+        withAnimation(.easeIn(duration: 0.25)) {
+            onboardingPromptText = message
+            showOnboardingPrompt = true
+            onboardingPromptOpacity = 1.0
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+            guard self.showOnboardingPrompt, self.onboardingPromptText == message else { return }
+            withAnimation(.easeOut(duration: 0.3)) {
+                self.onboardingPromptOpacity = 0.0
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                self.showOnboardingPrompt = false
+                self.onboardingPromptText = ""
+            }
+        }
+    }
+
     private func scheduleTransientHideIfNeeded() {
         guard !isClickyCursorEnabled && isOverlayVisible else { return }
         // Never fade the overlay out in the middle of a practice run.

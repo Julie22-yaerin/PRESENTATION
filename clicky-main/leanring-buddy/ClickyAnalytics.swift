@@ -136,6 +136,43 @@ enum ClickyAnalytics {
         ])
     }
 
+    // MARK: - The Lyceum gate and audience panel
+
+    /// A practice run was refused because the app in front was not a slide tool.
+    static func trackLyceumGateBlocked(reason: String) {
+        PostHogSDK.shared.capture("lyceum_gate_blocked", properties: [
+            "reason": reason
+        ])
+    }
+
+    /// A run stopped by itself on a farewell slide or heard closing words.
+    static func trackLyceumRunAutoEnded(kind: String) {
+        PostHogSDK.shared.capture("lyceum_run_auto_ended", properties: [
+            "kind": kind
+        ])
+    }
+
+    /// The panel was convened with N questions.
+    static func trackLyceumPanelConvened(questionCount: Int) {
+        PostHogSDK.shared.capture("lyceum_panel_convened", properties: [
+            "question_count": questionCount
+        ])
+    }
+
+    /// A question was answered out loud.
+    static func trackLyceumAnswerGiven(questionKind: String) {
+        PostHogSDK.shared.capture("lyceum_answer_given", properties: [
+            "question_kind": questionKind
+        ])
+    }
+
+    /// How the talk held up under questioning, 0-10.
+    static func trackLyceumDefenseScored(value: Int) {
+        PostHogSDK.shared.capture("lyceum_defense_scored", properties: [
+            "value": value
+        ])
+    }
+
     // MARK: - Errors
 
     /// An error occurred during the AI response pipeline.

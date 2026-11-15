@@ -173,6 +173,30 @@ struct LyceumCoachPanelView: View {
                 .scaleEffect(0.8)
             }
 
+            VStack(alignment: .leading, spacing: 8) {
+                toggleRow(
+                    title: "End the run when the talk ends",
+                    detail: "Watches for a goodbye slide, or the closing words in any language followed by a quiet room.",
+                    isOn: Binding(
+                        get: { coachManager.monitorsClosingSignals },
+                        set: { coachManager.monitorsClosingSignals = $0 }
+                    )
+                )
+
+                toggleRow(
+                    title: "Audience asks afterwards",
+                    detail: "\(coachManager.audience.members.count) agents watched and heard the run; they push back one at a time.",
+                    isOn: Binding(
+                        get: { coachManager.audience.isPanelEnabled },
+                        set: { coachManager.audience.isPanelEnabled = $0 }
+                    )
+                )
+            }
+
+            gateCard
+
+            roomCard
+
             Button(action: {
                 RunCueSound.play()
                 coachManager.startSession()
@@ -187,7 +211,7 @@ struct LyceumCoachPanelView: View {
             }
             .buttonStyle(DSPrimaryButtonStyle())
 
-            Text("Or tap control + option twice quickly. Tap it again when you finish.")
+            Text("Or press and release control + option to start, and again to stop. \(LyceumAppGate.detectionCaveat)")
                 .font(.system(size: 10))
                 .foregroundColor(DS.Colors.textTertiary)
         }
@@ -219,6 +243,159 @@ struct LyceumCoachPanelView: View {
         }
         .buttonStyle(.plain)
         .pointerCursor()
+    }
+
+    private func toggleRow(title: String, detail: String, isOn: Binding<Bool>) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(DS.Colors.textSecondary)
+                    Text(detail)
+                        .font(.system(size: 10))
+                        .foregroundColor(DS.Colors.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Toggle("", isOn: isOn)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .tint(DS.Colors.accent)
+                    .scaleEffect(0.8)
+            }
+        }
+    }
+
+    /// What the app is looking at right now, and the two escape hatches: allow this
+    /// one, or stop requiring a slide tool at all.
+    private var gateCard: some View {
+        let frontmost = coachManager.gate.latestFrontmost
+        let isAllowed = coachManager.gate.latestDecision.isAllowed
+        let hasBeenEvaluated = frontmost != .nothing
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: isAllowed ? "checkmark.seal.fill" : "seal.slash.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(isAllowed ? DS.Colors.success : DS.Colors.warningText)
+                Text(gateTitle(isAllowed: isAllowed, hasBeenEvaluated: hasBeenEvaluated))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(DS.Colors.textPrimary)
+                Spacer()
+                Button("Re-check") {
+                    _ = coachManager.gate.evaluateNow()
+                }
+                .font(.system(size: 10))
+                .buttonStyle(.plain)
+                .foregroundColor(DS.Colors.accentText)
+                .pointerCursor()
+            }
+
+            Text(frontmost.shortDescription.isEmpty ? "Nothing checked yet — press the hotkey or hit Re-check." : frontmost.shortDescription)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(DS.Colors.textTertiary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if !coachManager.gate.enforcesSlideTool {
+                Text("The slide-tool requirement is switched off, so a run starts anywhere.")
+                    .font(.system(size: 10))
+                    .foregroundColor(DS.Colors.warningText)
+            } else if !isAllowed && hasBeenEvaluated {
+                HStack(spacing: 8) {
+                    Button("Allow this app") {
+                        coachManager.gate.whitelistCurrentApp()
+                    }
+                    .font(.system(size: 11, weight: .medium))
+                    .buttonStyle(.plain)
+                    .foregroundColor(DS.Colors.accentText)
+                    .pointerCursor()
+
+                    Toggle("Require a slide tool", isOn: Binding(
+                        get: { coachManager.gate.enforcesSlideTool },
+                        set: { coachManager.gate.enforcesSlideTool = $0 }
+                    ))
+                    .toggleStyle(.switch)
+                    .font(.system(size: 10))
+                    .labelsHidden()
+                    .tint(DS.Colors.accent)
+                    .scaleEffect(0.7)
+                }
+            }
+        }
+        .padding(12)
+        .background(cardBackground)
+        .overlay(cardOverlay)
+    }
+
+    private func gateTitle(isAllowed: Bool, hasBeenEvaluated: Bool) -> String {
+        guard hasBeenEvaluated else { return "Slide tool check" }
+        if !coachManager.gate.enforcesSlideTool { return "Any app allowed" }
+        return isAllowed ? "Ready: \(coachManager.slideToolDisplayName)" : "Blocked: not a slide tool"
+    }
+
+    /// The room's status, with the two things a user reaches for during a round:
+    /// open the grid, or hand the floor back to the presenter.
+    private var roomCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(DS.Colors.blue400)
+                Text("The room")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(DS.Colors.textPrimary)
+                Spacer()
+                if coachManager.audience.isPanelEnabled {
+                    Text(coachManager.panelStatusSummary)
+                        .font(.system(size: 10))
+                        .foregroundColor(DS.Colors.textTertiary)
+                } else {
+                    Text("off")
+                        .font(.system(size: 10))
+                        .foregroundColor(DS.Colors.textTertiary)
+                }
+            }
+
+            if coachManager.audience.isPanelEnabled {
+                Text(rosterSummary)
+                    .font(.system(size: 10))
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 10) {
+                    Button(coachManager.isRoomVisible ? "Bring room forward" : "Open the room") {
+                        coachManager.openRoom()
+                    }
+                    .font(.system(size: 11, weight: .medium))
+                    .buttonStyle(.plain)
+                    .foregroundColor(DS.Colors.accentText)
+                    .pointerCursor()
+
+                    if coachManager.audience.isAwaitingUserAnswer {
+                        Button("Pass this question") {
+                            coachManager.skipCurrentQuestion()
+                        }
+                        .font(.system(size: 11, weight: .medium))
+                        .buttonStyle(.plain)
+                        .foregroundColor(DS.Colors.warningText)
+                        .pointerCursor()
+                    }
+
+                    Spacer()
+                }
+            }
+        }
+        .padding(12)
+        .background(cardBackground)
+        .overlay(cardOverlay)
+    }
+
+    private var rosterSummary: String {
+        let names = coachManager.audience.members.map { "\($0.name) (\($0.role))" }
+        guard !names.isEmpty else { return "Nobody is in the room. Add a seat in the room window." }
+        return names.joined(separator: " · ")
     }
 
     private var emptyReportHint: some View {
@@ -424,6 +601,39 @@ struct LyceumCoachPanelView: View {
             .padding(12)
             .background(cardBackground)
             .overlay(cardOverlay)
+
+            if let endedBy = coachManager.latestSavedSession?.endedBy {
+                HStack(spacing: 6) {
+                    Image(systemName: "stop.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(DS.Colors.textTertiary)
+                    Text("ended by \(endedBy)")
+                        .font(.system(size: 10))
+                        .foregroundColor(DS.Colors.textTertiary)
+                    Spacer()
+                }
+            }
+
+            if let defenseScore = report.defenseScore {
+                VStack(alignment: .leading, spacing: 6) {
+                    sectionLabel("Under questioning")
+                    HStack(spacing: 8) {
+                        Text("\(defenseScore.value)/10")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(defenseScore.value >= 7 ? DS.Colors.success : DS.Colors.warningText)
+                        Text(defenseScore.label)
+                            .font(.system(size: 11))
+                            .foregroundColor(DS.Colors.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Text("\(coachManager.audience.answeredCount) of \(coachManager.audience.questions.count) answered out loud")
+                        .font(.system(size: 10))
+                        .foregroundColor(DS.Colors.textTertiary)
+                }
+                .padding(12)
+                .background(cardBackground)
+                .overlay(cardOverlay)
+            }
 
             if !report.scoreRows.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {

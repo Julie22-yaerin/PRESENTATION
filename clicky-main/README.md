@@ -2,7 +2,7 @@
 
 The Lyceum is this repo turned into a rehearsal coach. Same engine, same hotkey, one new idea: **tap** the hotkey instead of holding it, and the app watches your screen and listens to you present, then grades the run.
 
-Tap `Control + Option` to start a run. Talk through your deck like you would in the room — slides change are detected automatically. Tap it again to stop. A few seconds later you get a verdict: scores, what landed, where it broke, and per-slide edits you can copy straight back into Keynote or PowerPoint. Export the whole thing as Markdown or JSON.
+Tap `Control + Option` to start a run — only if a slide tool is in front of you. Talk through your deck like you would in the room — slides change are detected automatically. Tap it again to stop. A few seconds later you get a verdict: scores, what landed, where it broke, and per-slide edits you can copy straight back into Keynote or PowerPoint. Export the whole thing as Markdown or JSON.
 
 Three drills, picked in the panel:
 
@@ -11,6 +11,40 @@ Three drills, picked in the panel:
 - **Slide review** — present the deck. It reads density, checks whether what you *said* matches what's *on* the slide, and rewrites bullets plus speaker notes for each one.
 
 Holding `Control + Option` still does the original thing: push-to-talk, screenshot, question, answer. Nothing was taken away.
+
+### It knows when you finished
+
+You do not have to tap again. A run ends by itself when the talk does: a goodbye / "any questions?" slide appears, or you say the closing words — "cảm ơn mọi người đã lắng nghe", "thank you for listening", "私の発表は以上です", whichever language you presented in — and the room then goes quiet for three seconds. The pause is required, because a speaker who says "thanks" and keeps going was not finished. Switch it off with **End the run when the talk ends**.
+
+### Then the room asks questions
+
+A verdict on its own is a report card. The Lyceum finishes the session the way a real room does: five people who watched and heard the whole thing turn around and ask you about it.
+
+The room is drawn like a call — participant tiles, a permanent control bar, a room code in the corner, your own feed floating at the edge — because everyone already knows what a call looks like when somebody is about to speak. Each tile is a separate agent with its own name, role and voice, and they are not interchangeable:
+
+| Who | What they care about |
+|---|---|
+| **Mara Vidal** — committee chair | whether the claim was actually justified |
+| **Tom Reyes** — product lead | what breaks in week one |
+| **Ines Okafor** — domain expert | the number you skipped, the term you used wrongly |
+| **Kenji Sato** — funder | why now, how big, what they would have to believe |
+| **Priya Nair** — session chair | the promise, whether it got paid off, what to do next |
+
+They ask out loud, one at a time, **in the language you presented in**. When a question lands, hold `Control + Option` and answer the way you would at the podium; release when you are done. The agent who asked decides honestly whether the answer held up: if it did, they sit down; if you dodged, you get one follow-up. A quick tap passes on the question, and a quiet room moves on by itself after 45 seconds. Mute the room, or turn captions off, from its control bar.
+
+When the round ends there is a second number: how the talk **defended**, judged on directness, evidence produced on demand, and whether you conceded instead of bluffing — fluency alone does not earn it. It is merged into the same report, so the Markdown export carries both halves of the rehearsal.
+
+The People button edits the room: rename them, give them another role or concern, set each one to Gentle, Standard or Brutal, remove a seat, add a sixth, restore the default five. Any agent can be given an ElevenLabs voice id; with none set, every agent gets a different local macOS voice, so a fresh install already sounds like five people.
+
+### It only starts in a slide tool
+
+The hotkey refuses to open a run unless a presentation is in front of you: Keynote, PowerPoint, Google Slides, Canva, Gamma, Pitch, Prezi or LibreOffice Impress. That is the point — this is a rehearsal room, not a general-purpose assistant.
+
+A Canva poster does not count. Web tools are recognised from the browser tab's title (which needs the Screen Recording permission the slide watcher already asks for), so "Quarterly review – Canva" opens a room while "Event poster – Canva" does not, and the same goes for whiteboards, one-pagers, thumbnails and invitations. Native apps are matched by bundle id and are exact.
+
+If the tool you actually present in is not on the list, the coach panel says so, names the window it looked at, and offers **Allow this app**. The requirement can be switched off entirely in the same place.
+
+---
 
 Built on [Clicky](https://github.com/farzaa/clicky) by [@farzatv](https://x.com/FarzaTV), MIT licensed. The product name changed; the original code, license and author notes below stay exactly as they were.
 
@@ -158,11 +192,13 @@ The app will appear in your menu bar (not the dock). Click the icon to open the 
 ### Permissions the app needs
 
 - **Microphone** — push-to-talk, plus continuous capture while a practice run is live
-- **Accessibility** — for the global keyboard shortcut (Control + Option: tap = run, hold = ask)
+- **Accessibility** — for the global keyboard shortcut (Control + Option: tap = start or stop a run, hold = ask, hold while the room is waiting = answer)
 - **Screen Recording** — screenshots on the hotkey, plus a 1.6s slide-change watcher while a run is live
 - **Screen Content** — for ScreenCaptureKit access
 
 The slide watcher only stores a snapshot when the screen actually settles on something new, so a 10-minute run costs a handful of images, not 400.
+
+The audience panel needs nothing extra. It reads the same microphone and the same screen-recording grant, and its voices come from macOS itself unless you give an agent an ElevenLabs voice id.
 
 ## Architecture
 
