@@ -1,0 +1,6 @@
+// Release configuration used for the shipped The Lyceum builds.
+MARKETING_VERSION = 0.4.0
+CURRENT_PROJECT_VERSION = 4
+MACOSX_DEPLOYMENT_TARGET = 14.2
+ONLY_ACTIVE_ARCH = NO
+ARCHS = arm64 x86_64

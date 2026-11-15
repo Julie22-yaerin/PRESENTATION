@@ -209,3 +209,9 @@ When you make changes to this project that affect the information in this file, 
 6. **Line count drift**: If a file's line count changes significantly (>50 lines), update the approximate count in the Key Files table
 
 Do NOT update this file for minor edits, bug fixes, or changes that don't affect the documented architecture or conventions.
+
+### Release configuration notes
+
+- The app release metadata is intentionally centralized in `clicky-main/Config/Release.xcconfig`, `clicky-main/scripts/version.sh`, and `landing/download-config.json` so the version and minimum macOS stay aligned.
+- The Sparkle appcast feed and the product metadata must point at `Julie22-yaerin/PRESENTATION`; do not leave a fork or third-party repo in the release path.
+- `landing/index.html` and `landing/lib/dictionary.en.js` should not hard-code a single DMG filename in the install instructions; the page should instruct the user to open the DMG for the machine they are on.

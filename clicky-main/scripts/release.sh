@@ -5,23 +5,12 @@ set -euo pipefail
 export PATH="/opt/homebrew/bin:$PATH"
 
 # =============================================================================
-# release.sh — Automates the full release pipeline for makesomething
-#
-# What it does (in order):
-#   1. Auto-detects version + build from the latest GitHub Release
-#   2. Archives the app via xcodebuild
-#   3. Exports a signed + notarized .app
-#   4. Wraps it in a DMG with the drag-to-Applications background
-#   5. Notarizes the DMG with Apple (so Gatekeeper won't block it)
-#   6. Signs the DMG with your Sparkle EdDSA key
-#   7. Generates/updates appcast.xml automatically
-#   8. Creates a GitHub Release with the DMG attached
-#   9. Pushes the updated appcast.xml to the releases repo (makesomething-mac-app)
+# release.sh — Automates the full release pipeline for The Lyceum.
+# This repo keeps the app and release metadata aligned with the public landing page.
 #
 # Usage:
-#   ./scripts/release.sh              Auto-bumps: 1.5 → 1.6, build 6 → 7
-#   ./scripts/release.sh 2.0          Sets marketing version to 2.0, auto-bumps build
-#   ./scripts/release.sh 2.0 10       Sets both marketing version and build number
+#   ./scripts/release.sh              Reuses the values from Config/Release.xcconfig
+#   ./scripts/release.sh 0.5.0        Set a marketing version and keep the release repo
 #
 # Prerequisites (one-time setup):
 #   - Xcode with your Developer ID signing certificate
@@ -34,7 +23,7 @@ export PATH="/opt/homebrew/bin:$PATH"
 # ── Configuration ────────────────────────────────────────────────────────────
 
 SCHEME="leanring-buddy"
-APP_NAME="makesomething"
+APP_NAME="Lyceum"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="${PROJECT_DIR}/build"
 ARCHIVE_PATH="${BUILD_DIR}/${APP_NAME}.xcarchive"
@@ -43,7 +32,7 @@ DMG_OUTPUT_DIR="${BUILD_DIR}/dmg"
 RELEASES_DIR="${PROJECT_DIR}/releases"  # where generate_appcast reads DMGs from
 DMG_BACKGROUND="${PROJECT_DIR}/dmg-background.png"
 
-GITHUB_REPO="julianjear/makesomething-mac-app"
+GITHUB_REPO="Julie22-yaerin/PRESENTATION"
 
 # Sparkle tools (auto-discovered from Xcode's SPM cache)
 SPARKLE_BIN=$(find ~/Library/Developer/Xcode/DerivedData/leanring-buddy*/SourcePackages/artifacts/sparkle/Sparkle/bin -maxdepth 0 2>/dev/null | head -1)
@@ -245,12 +234,12 @@ echo "🏷️  Creating GitHub Release ${TAG}..."
 gh release create "${TAG}" "${DMG_PATH}" \
     --repo "${GITHUB_REPO}" \
     --title "v${MARKETING_VERSION}" \
-    --notes "makesomething v${MARKETING_VERSION}" \
+    --notes "The Lyceum v${MARKETING_VERSION}" \
     --latest
 
 # ── Step 9: Push appcast.xml to the releases repo ───────────────────────────
-# The appcast lives in makesomething-mac-app (the releases repo), not in the
-# source code repo. We clone it to a temp dir, copy the new appcast, and push.
+# The appcast lives in the same GitHub repository for the app release, not in a
+# forked project. We clone it to a temp dir, copy the new appcast, and push.
 
 echo "📝 Pushing appcast.xml to ${GITHUB_REPO}..."
 RELEASES_REPO_DIR=$(mktemp -d)

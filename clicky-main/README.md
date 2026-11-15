@@ -148,6 +148,15 @@ Help me set up everything — the Cloudflare Worker with my own API keys, the pr
 
 That's it. It'll clone the repo, read the docs, and walk you through the whole setup. Once you're running you can just keep talking to it — build features, fix bugs, whatever. Go crazy.
 
+## Release configuration
+
+The release metadata is intentionally defined in one place and mirrored into the landing page:
+
+- `Config/Release.xcconfig` defines `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`, and `MACOSX_DEPLOYMENT_TARGET`.
+- `scripts/version.sh` prints the same values for automation and docs.
+- `landing/download-config.json` is the single source of truth for the public download channel metadata.
+- `scripts/check-release-config.sh` fails if the project version, minimum macOS, appcast repo, or product name drift away from the public configuration.
+
 ## Manual setup
 
 If you want to do it yourself, here's the deal.

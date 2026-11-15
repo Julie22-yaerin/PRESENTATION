@@ -1,0 +1,32 @@
+name: Release configuration checks
+
+on:
+  push:
+    paths:
+      - 'clicky-main/leanring-buddy.xcodeproj/project.pbxproj'
+      - 'clicky-main/Config/**'
+      - 'clicky-main/scripts/**'
+      - 'landing/**'
+      - 'clicky-main/appcast.xml'
+  pull_request:
+    paths:
+      - 'clicky-main/leanring-buddy.xcodeproj/project.pbxproj'
+      - 'clicky-main/Config/**'
+      - 'clicky-main/scripts/**'
+      - 'landing/**'
+      - 'clicky-main/appcast.xml'
+  workflow_dispatch:
+
+jobs:
+  release-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check release config
+        run: bash clicky-main/scripts/check-release-config.sh
+      - name: Check Windows release status
+        run: bash clicky-main/scripts/check-release-windows.sh
+      - name: Check download channels
+        run: bash landing/scripts/check-downloads.sh
+      - name: Check i18n parity
+        run: node landing/scripts/check-i18n.mjs

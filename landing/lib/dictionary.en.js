@@ -165,7 +165,7 @@ export const en = {
   'dl.sub2': ', present like it is a real class. done.',
   'dl.noscript': 'turn on javascript so we can pick the right build for your machine — or scroll to the release list at the bottom of this page.',
   'dl.aside.h': 'after you install',
-  'dl.aside.1': 'open <code>TheLyceum.dmg</code>, drag <strong>The Lyceum</strong> into <strong>Applications</strong>.',
+  'dl.aside.1': 'open the DMG for your Mac, drag <strong>The Lyceum</strong> into <strong>Applications</strong>.',
   'dl.aside.2': 'first launch asks four questions: your grade, who you are speaking to, whether it is a contest, and what it is called. under a minute.',
   'dl.aside.3': 'macos asks for the mic and screen recording — give it once and it stops asking.',
   'dl.aside.4': 'open your talk: hold ctrl+option to ask something, tap it once to start a run with a room.',
