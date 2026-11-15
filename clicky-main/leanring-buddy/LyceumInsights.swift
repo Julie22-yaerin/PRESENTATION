@@ -124,6 +124,10 @@ struct LyceumPracticeSummary: Equatable {
 
 enum LyceumInsights {
     /// Words that carry no coaching meaning and would dominate every frequency count.
+    /// The non-Latin rows are deliberate, not stray characters from a bad paste: the
+    /// weak-spot counter runs over whatever language the student presented in, so a
+    /// Chinese or Japanese talk is counted with its own particles excluded. If you are
+    /// tempted to "clean up" this list, do not — you would only silence those rooms.
     private static let stopWords: Set<String> = [
         "the", "and", "a", "an", "of", "to", "in", "on", "for", "with", "that", "this", "it", "is", "are",
         "was", "were", "you", "your", "we", "our", "they", "their", "i", "my", "me", "be", "been", "have",
