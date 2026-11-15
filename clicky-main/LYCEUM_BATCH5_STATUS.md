@@ -1,71 +1,67 @@
-# Đợt 5 — TRẠNG THÁI (cập nhật 2026-11-15 21:01)
+# Đợt 5 — ĐÃ SHIP (2026-11-15 21:07, commit `d1f4de5` + `e94c8c4`)
 
-Làm việc trong `/home/ubuntu/presentation/clicky-main`, nguồn `leanring-buddy/`.
-KHÔNG có Swift compiler ở đây → mọi thứ kiểm bằng 2 script:
-`python3 /tmp/swiftcheck.py <files>` (cân bằng ngoặc + API tồn tại) và
-`python3 /tmp/xcheck_batch5.py` (mọi `Type.member` phải có khai báo).
-Chạy gần nhất: **9 file OK, 0 structural issues; xcheck chỉ còn 3 dương tính giả là
-comment đầu file (`//  X.swift`) và 1 dòng hợp lệ ở LyceumInsights.swift:342.**
+File này dành cho agent kế tiếp. Những gì bên dưới là API đã kiểm bằng script, không phải ý định.
 
-## File mới (do 3 subagent viết, tôi đã soát)
+## Kiểm chứng (chạy lại được)
 
-| File | Dòng | Nội dung | API công khai đã kiểm |
-| --- | --- | --- | --- |
-| `LyceumOnboarding.swift` | ~985 | profile + 5 bước onboarding | `LyceumGrade {k12(Int), university, other(String)}` có `displayName/isOther/otherNote/contextPhrase`, `schoolYears`; `LyceumAudienceKind {teachers, classmates, judgingPanel, parents, club, publicAudience, other}` có `displayName/symbol/contextPhrase`; `LyceumLearnerProfile {grade?, audiences, otherAudienceNote, isCompeting, competitionName, competitionOrganiser, completedOnboardingAt}` + `empty/hasAnyAnswer/gradeKindForAnalytics`; `LyceumProfileStore.shared` (`@Published private(set) profile`, `hasCompletedOnboarding`, `update(_:)`, `markCompleted()`, `restartOnboarding()`, `contextLineForModel`), key `lyceumLearnerProfile`; `LyceumOnboardingView(profile:onOpenAgentStudio:onFinish:)` — view TỰ gọi `profile.markCompleted()` rồi `onFinish()`. |
-| `LyceumAgentStudio.swift` | ~545 | studio 5 agent | `LyceumAgentStudioView(audience:onClose:)`, `avatarSymbols` (8), `nameLimit = 24`, write path duy nhất `mutate(_:_)` |
-| `LyceumTheme.swift` | 145 | theme | `LyceumAppearanceMode {system, light, dark}` (`displayName/symbol/brief`), `LyceumAppearanceController.shared` (`mode`, `reduceMotion`, `colorScheme: ColorScheme?`, `apply()`), key `lyceumAppearanceMode`, `lyceumReduceMotion`; modifier `.lyceumColorScheme(_:)` |
-| `LyceumDashboardSettingsView.swift` | ~1449 | sheet cài đặt | `LyceumDashboardSettingsView(coach:audience:gate:companion:)`, `enum SettingsSection: String, CaseIterable, Identifiable {voice, room, rules, data, appearance, gettingStarted}` (tôi vừa thêm `: String` để `.rawValue` dùng cho analytics), frame 760×560, section `gettingStartedSection` có nút "Run onboarding again" → `profileStore.restartOnboarding()` |
+- `python3 /tmp/swiftcheck.py <files>` — cân bằng ngoặc + API có tồn tại. Kết quả: 16 file, 0 issue.
+- `python3 /tmp/xcheck_batch5.py` — mọi `Type.member` của các type mới phải có khai báo.
+  dương tính giả đã biết: comment đầu file (`//  X.swift`) và biến local tên `profile` thật ra là store.
+- KHÔNG có Swift compiler ở đây ⇒ build thật vẫn phải làm bằng Cmd+R trên máy Mac.
 
-## File đã sửa (tôi)
+## API đáng nhớ
 
-- `LyceumAudience.swift` (1138): `functions/traits/focus: [String]?` (optional để data cũ decode được),
-  `maximumCriteria = 5`, `criteriaCount`, `hasCriteria`, `isAtCriteriaLimit`, `criteriaSlotsLeft`,
-  `isSelected(_:)`, `toggling(_:_:)` + `toggling(_ option:)` (từ chối cái thứ 6),
-  `criteriaSummaryForModel`, `criteriaBriefsForModel`, `hasOwnName` (tôi thêm),
-  `maximumMembers` **6 → 5**, `panelSystemPrompt` in dòng tiêu chí + **dòng "WHO IS IN FRONT OF
-  THIS ROOM"** từ `LyceumProfileStore.shared.contextLineForModel`, và enum mới
-  `LyceumAudienceTuning {schoolYear(of:), isSeatCustomised(_:), customisedSeatCount(in:), tuned(_:for:)}`
-  (tuning CHỈ đụng seat chưa có criteria; competition → harsher, grade ≤ 8 → bỏ brutal,
-  classmate đổi vai khi audience là parents/public).
-- `LyceumCoachManager.swift`: `systemPrompt + topicContextLine() + profileContextLine()`
-  (`profileContextLine()` mới, đọc `contextLineForModel`).
-- `ClickyAnalytics.swift` (241): 3 event mới — `trackLyceumOnboardingCompleted(gradeKind:audienceKinds:hasOtherAudienceNote:isCompetition:agentsCustomised:)`,
-  `trackLyceumAgentSaved(criteriaCount:hasOwnName:)`, `trackLyceumSettingsOpened(section:)`.
-  **Chỉ số, không bao giờ gửi tên trường/tên cuộc thi.**
-- `LyceumDashboardView.swift` (1573): `DashboardTab` còn `overview, progress, runs, guide`;
-  `sidebarSettingsRow` (nút ⚙ góc dưới) → `.sheet` settings; `@ObservedObject appearance` +
-  `.lyceumColorScheme(appearance.colorScheme)` (đã bỏ hard-code `.dark`); tôi thêm
-  `isShowingAgentStudio`, `profileStore`, `.overlay` onboarding khi `!hasCompletedOnboarding`,
-  `.sheet` studio, và `finishOnboarding()` (tuning → gán `audience.members` → analytics → reloadData).
-- `LyceumAgentStudio.swift`: chip gọi `mutate` rồi `trackLyceumAgentSaved`.
-- `LyceumDashboardSettingsView.swift`: `.onChange(of: selection)` → `trackLyceumSettingsOpened`.
-- `leanring_buddyApp.swift`: `LyceumAppearanceController.shared.apply()` ngay sau `register(defaults:)`;
-  và `if !LyceumProfileStore.shared.hasCompletedOnboarding { companionManager.openLyceumDashboard() }`
-  (API có thật: `CompanionManager.openLyceumDashboard()` dòng 135; notification `.lyceumOpenDashboard`).
+`LyceumProfileStore.shared` (`lyceumLearnerProfile`)
+: `profile`, `hasCompletedOnboarding`, `update(_:)`, `markCompleted()`, `restartOnboarding()`,
+`contextLineForModel: String` (rỗng khi chưa có hồ sơ ⇒ prompt không đổi).
+`LyceumLearnerProfile`: `grade: LyceumGrade?`, `audiences: [LyceumAudienceKind]`,
+`otherAudienceNote`, `isCompeting`, `competitionName`, `competitionOrganiser`,
+`completedOnboardingAt`, `hasAnyAnswer`, `gradeKindForAnalytics` (chỉ `k12`/`university`/`other`/`none`).
+`LyceumOnboardingView(profile:onOpenAgentStudio:onFinish:)` — view TỰ `markCompleted()` rồi mới gọi
+`onFinish()`. Host không được đánh dấu hoàn tất hộ.
 
-## Landing (repo cùng cấp, đã xong một phần)
+`LyceumAudienceTuning` (trong `LyceumAudience.swift`)
+: `schoolYear(of:)`, `isSeatCustomised(_:)`, `customisedSeatCount(in:)`, `tuned(_:for:)`.
+Bất biến quan trọng: **ghế đã có criteria không bị viết lại**; chỉ roster mặc định bị nắn.
+`LyceumAudienceMember`: `functions/traits/focus: [String]?` (optional ⇒ data cũ decode được),
+`maximumCriteria = 5`, `criteriaCount`, `hasCriteria`, `isAtCriteriaLimit`, `criteriaSlotsLeft`,
+`isSelected(_:)`, `toggling(_:)` (pure, từ chối cái thứ 6), `criteriaSummaryForModel`,
+`criteriaBriefsForModel`, `hasOwnName`. `LyceumAudienceRoster.maximumMembers = 5`.
 
-`/home/ubuntu/presentation/landing`: "sau khi cài" đổi thành **4 bước** khớp flow thật
-(dmg → Applications → 4 câu hỏi onboarding → quyền → luyện). `node scripts/check-i18n.mjs` =
-**179 keys, parity OK**. Chưa commit (sẽ commit cùng đợt này).
+`LyceumAppearanceController.shared` (`lyceumAppearanceMode`, `lyceumReduceMotion`)
+: `mode`, `colorScheme: ColorScheme?`, `apply()` — gọi ở `applicationDidFinishLaunching`.
+View: dùng `.lyceumColorScheme()` (không tham số) cho mọi thứ dựng một lần trong `NSHostingView`
+(panel), vì nó giữ subscription sống. Cấm viết lại `.environment(\.colorScheme, .dark)`.
 
-## CÒN LẠI (thứ tự)
+`LyceumDashboardSettingsView(coach:audience:gate:companion:)` — sheet 760×560,
+`enum SettingsSection: String` (`voice`, `room`, `rules`, `data`, `appearance`, `gettingStarted`);
+`rawValue` được dùng làm tên bucket analytics ⇒ đừng đổi case mà không biết analytics đổi theo.
+`LyceumAgentStudioView(audience:onClose:)` — write path duy nhất là `mutate(_:_)` → `audience.members`
+(`didSet` tự lưu).
 
-1. Docs: `README.md` (heading: "## The Lyceum" dòng 1, "### A dashboard for a term of practice" 46,
-   "### It only starts in a slide tool" 51, "### Permissions the app needs" 204,
-   "## Project structure" 226, "## Landing page" 256) + `AGENTS.md` (bảng Key Files, luật self-update).
-   Cần mô tả: gear settings, onboarding 5 câu, agent studio ≤5 tiêu chí, theme, data section.
-2. `git add` + commit + push `main` (token GitHub: user dán trong chat, KHÔNG lưu vào file;
-   dùng `umask 077` + `/tmp/ght` + `GIT_ASKPASS`, xoá sau khi push). Attribution:
-   `git -c user.name="Manus" -c user.email="dev-agent@manus.ai" commit` + trailer
-   `Co-authored-by: Manus <dev-agent@manus.ai>`.
-3. Cập nhật `/home/ubuntu/The-Lyceum-Handoff.md` thêm "Đợt 5".
-4. Báo user: build cần Cmd+R trên máy họ; list 4 runtime check họ nên làm.
+Analytics mới (toàn bộ là scalar): `lyceum_onboarding_completed`, `lyceum_agent_saved`,
+`lyceum_settings_opened`. Không chữ ký nào nhận tên trường/tên cuộc thi/transcript.
 
-## Rủi ro thật (nói thẳng với user khi bàn giao)
+## Dashboard giờ chỉ còn 4 tab
 
-- Không compiler ⇒ lỗi kiểu/còn sót chỉ bắt được khi build thật trên Xcode.
-- Onboarding overlay nằm trên dashboard: nếu user đóng dashboard khi chưa xong thì lần mở lại
-  mới hiện tiếp (đã chủ đích, note trong code).
-- `LyceumAudienceTuning` ghi đè `persona` của seat mặc định nếu user chưa tự sửa ⇒ chủ đích,
-  nhưng nếu họ muốn giữ nguyên văn 5 vai gốc thì phải bấm "Restore the five defaults" sau onboarding.
+`DashboardTab = overview | progress | runs | guide`. Cài đặt nằm sau ⚙ dưới góc sidebar
+(`sidebarSettingsRow`). Onboarding là `.overlay` toàn cửa sổ khi `!hasCompletedOnboarding`,
+và `finishOnboarding()` là chỗ duy nhất áp tuning + báo analytics.
+
+## Landing (`/landing`)
+
+"Sau khi cài" = 4 bước khớp flow thật (dmg → Applications → 4 câu hỏi → quyền → luyện).
+`node scripts/check-i18n.mjs` = 179 keys, parity Việt/Anh. Link tải vẫn là
+`landing/download-config.json` (chưa có asset release ⇒ hiển thị "coming soon" + ★ tự chọn bản
+theo máy). Pages deploy #4 = success.
+
+## Việc kế tiếp nên làm
+
+1. Onboarding/tuning mới chỉ được kiểm bằng đọc code. Chạy 5 bước test ở
+   `/home/ubuntu/The-Lyceum-Handoff.md` (mục Đợt 5) trên máy Mac trước khi thêm tính năng.
+2. Nếu theme Light lộ chỗ nào lệch (màu hard-code còn sót trong panel cũ), sửa bằng DS tokens,
+   không thêm màu mới.
+3. `Data → Delete runs older than` dùng `LyceumSessionStore`; nếu sau này thêm archive, nhớ rằng
+   exports đang gộp mọi session vào một file JSON.
+4. Camera và voice dials (đợt 3) vẫn chưa có "onboarding frequency" đầy đủ — user hẹn chỉnh tần suất
+   và mức độ trong onboarding; giờ đã có chỗ (Getting started) để nối mà không tạo màn hình mới.
