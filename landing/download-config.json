@@ -1,0 +1,61 @@
+{
+  "_how_to_use": "NƠI DUY NHẤT ĐỂ ĐỔI LINK TẢI. Mỗi kênh đã có sẵn 'plannedUrl' theo đúng tên file mà điều kiện release nhắc ở dưới. Khi bạn upload asset với tên đó lên GitHub Release, chỉ việc copy plannedUrl sang url — nút tự thành nút tải thật. url để trống thì nút hiện 'sắp có · <tên file>' và trỏ vào signupUrl; tuyệt đối không có nút chết.",
+  "_release_recipe": "macOS: cd clicky-main && ./scripts/release.sh (build + notarise + appcast), rồi tạo Release tag v<version> với asset tên CHÍNH XÁC: TheLyceum-arm64.dmg (M-series) và TheLyceum-intel.dmg. Windows: cùng tag, thêm TheLyceum-win-x64.exe. Trang này dùng releases/latest/download/<asset> nên bản mới nhất luôn được chọn, không phải sửa code.",
+  "_check_command": "bash landing/scripts/check-downloads.sh",
+  "version": "0.4.0",
+  "updated": "2026-11-15",
+  "signupUrl": "https://github.com/Julie22-yaerin/PRESENTATION/issues/new?title=Xin%20link%20ban%20thu",
+  "releaseNotesUrl": "https://github.com/Julie22-yaerin/PRESENTATION/releases",
+  "requirements": {
+    "macos": "14.2",
+    "windows": "10"
+  },
+  "channels": [
+    {
+      "id": "mac-arm",
+      "platform": "macos",
+      "arch": "arm64",
+      "labelKey": "gen.appleSilicon",
+      "icon": "apple",
+      "url": "",
+      "sizeMb": 46,
+      "note": "M-series (M1/M2/M3/M4)",
+      "plannedUrl": "https://github.com/Julie22-yaerin/PRESENTATION/releases/latest/download/TheLyceum-arm64.dmg",
+      "signupUrl": "https://github.com/Julie22-yaerin/PRESENTATION/issues/new?title=Xin%20link%20ban%20thu"
+    },
+    {
+      "id": "mac-intel",
+      "platform": "macos",
+      "arch": "x64",
+      "labelKey": "gen.intel",
+      "icon": "apple",
+      "url": "",
+      "sizeMb": 48,
+      "note": "Mac chạy Intel",
+      "plannedUrl": "https://github.com/Julie22-yaerin/PRESENTATION/releases/latest/download/TheLyceum-intel.dmg",
+      "signupUrl": "https://github.com/Julie22-yaerin/PRESENTATION/issues/new?title=Xin%20link%20ban%20thu"
+    },
+    {
+      "id": "win-x64",
+      "platform": "windows",
+      "arch": "x64",
+      "labelKey": "gen.windows",
+      "icon": "windows",
+      "url": "",
+      "sizeMb": 52,
+      "note": "Windows 10 và 11",
+      "plannedUrl": "https://github.com/Julie22-yaerin/PRESENTATION/releases/latest/download/TheLyceum-win-x64.exe",
+      "signupUrl": "https://github.com/Julie22-yaerin/PRESENTATION/issues/new?title=Xin%20link%20ban%20thu"
+    },
+    {
+      "id": "beta",
+      "platform": "other",
+      "labelKey": "gen.repo",
+      "icon": "code",
+      "url": "https://github.com/Julie22-yaerin/PRESENTATION",
+      "signupUrl": "https://github.com/Julie22-yaerin/PRESENTATION/releases",
+      "note": "mã nguồn + mọi bản đã phát hành",
+      "plannedUrl": ""
+    }
+  ]
+}

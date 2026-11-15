@@ -253,6 +253,18 @@ worker/                  # Cloudflare Worker proxy
 CLAUDE.md                # Full architecture doc (agents read this)
 ```
 
+## Landing page
+
+The public marketing page lives at [`../landing/`](../landing/) — plain HTML/CSS/JS, no build step,
+published to GitHub Pages by `.github/workflows/pages.yml`.
+
+- Read [`landing/README.md`](../landing/README.md) before editing copy or colours.
+- **Download links are configuration, not code:** `landing/download-config.json`.
+  A channel with an empty `url` renders as "coming soon" instead of a dead button, which is the
+  current state until release assets named `TheLyceum-arm64.dmg`, `TheLyceum-intel.dmg` and
+  `TheLyceum-win-x64.exe` exist.
+- `bash landing/scripts/check-downloads.sh` prints which channels are live.
+
 ## Contributing
 
 PRs welcome. If you're using Claude Code, it already knows the codebase — just tell it what you want to build and point it at `CLAUDE.md`.

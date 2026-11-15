@@ -1,0 +1,767 @@
+/* ==========================================================================
+   Page sections, in the order of the reference layout:
+   masthead → manifesto → product shot → what it does → wall → pricing →
+   faq → download → footer.
+   ========================================================================== */
+
+.wrap {
+  width: 100%;
+  max-width: var(--measure-wide);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.wrap--col {
+  max-width: var(--measure);
+}
+
+.band {
+  padding-block: clamp(3.5rem, 9vw, var(--s-7));
+}
+
+.band--sunk {
+  background: var(--paper-sunk);
+  border-block: 1px solid var(--olive-line);
+}
+
+.band--olive {
+  background: var(--olive);
+  color: #f1f3e8;
+}
+
+.band--olive a,
+.band--olive h2,
+.band--olive .tag {
+  color: #fff;
+}
+
+.section-head {
+  margin-bottom: var(--s-4);
+}
+
+.section-head h2 {
+  margin-bottom: 0.6rem;
+}
+
+.section-head p {
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+/* --- masthead ----------------------------------------------------------- */
+.mast {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: saturate(120%) blur(10px);
+  border-bottom: 1px solid rgba(92, 107, 52, 0.14);
+}
+
+.mast__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 64px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 0;
+  color: var(--ink);
+}
+
+.brand svg {
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+
+.brand b {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+
+.mast__nav {
+  display: none;
+  gap: var(--s-3);
+  margin-inline-start: auto;
+}
+
+.mast__nav a {
+  border: 0;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
+.mast__nav a:hover {
+  color: var(--olive);
+}
+
+.mast__right {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-inline-start: auto;
+}
+
+@media (min-width: 900px) {
+  .mast__nav {
+    display: flex;
+  }
+
+  .mast__right {
+    margin-inline-start: var(--s-3);
+  }
+}
+
+.lang {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--olive-line);
+  border-radius: 999px;
+  background: var(--paper-raised);
+}
+
+.lang button {
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: background var(--fast), color var(--fast);
+}
+
+.lang button[aria-pressed="true"] {
+  background: var(--olive);
+  color: #fff;
+}
+
+.mast__cta {
+  display: none;
+  min-height: 40px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.9rem;
+}
+
+@media (min-width: 620px) {
+  .mast__cta {
+    display: inline-flex;
+  }
+}
+
+/* --- manifesto ---------------------------------------------------------- */
+.manifesto {
+  padding-block: clamp(3rem, 8vw, 6.5rem) var(--s-4);
+}
+
+.manifesto__lead {
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+  color: var(--olive);
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin: 0 0 var(--s-3);
+}
+
+.manifesto__lines p {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3.6vw, 2.1rem);
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.8em;
+  color: var(--ink);
+}
+
+.manifesto__lines p:nth-child(2) {
+  color: var(--ink-soft);
+}
+
+.manifesto__lines p:last-child {
+  color: var(--olive);
+}
+
+.manifesto__note {
+  margin-top: var(--s-3);
+  font-size: 0.95rem;
+  color: var(--ink-faint);
+}
+
+/* --- figures ------------------------------------------------------------ */
+.shot {
+  position: relative;
+  margin-top: var(--s-4);
+  background: var(--paper-raised);
+  border: 1px solid var(--olive-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+
+.shot img {
+  width: 100%;
+}
+
+/* motif 2: a piece of yellow tape holding the picture to the page */
+.shot::after {
+  content: "";
+  position: absolute;
+  top: -0.7rem;
+  left: 50%;
+  width: 5.2rem;
+  height: 1.7rem;
+  background: rgba(246, 231, 161, 0.88);
+  border-inline: 1px dashed rgba(92, 107, 52, 0.3);
+  transform: translateX(-50%) rotate(-2deg);
+  box-shadow: 0 2px 6px -3px rgba(34, 39, 27, 0.45);
+}
+
+.shot__cap {
+  margin: 0;
+  padding: 0.9rem 1.1rem 1.05rem;
+  font-size: 0.88rem;
+  color: var(--ink-faint);
+  border-top: 1px solid rgba(92, 107, 52, 0.12);
+  background: var(--paper-raised);
+}
+
+/* --- what it does ------------------------------------------------------- */
+.does {
+  display: grid;
+  gap: var(--s-4);
+  margin-top: var(--s-3);
+}
+
+@media (min-width: 900px) {
+  .does {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s-3);
+  }
+}
+
+.does__item h3 {
+  margin-bottom: 0.5rem;
+}
+
+.does__item h3 span {
+  color: var(--olive);
+}
+
+.does__item p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+}
+
+.does__item {
+  padding-inline-start: 1rem;
+  border-inline-start: 2px solid var(--sun-deep);
+}
+
+/* --- wall of posts ------------------------------------------------------ */
+.posts {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+
+@media (min-width: 760px) {
+  .posts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--s-4);
+  }
+}
+
+.post {
+  background: var(--paper-raised);
+  border: 1px solid rgba(92, 107, 52, 0.16);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.25rem 1rem;
+  box-shadow: var(--shadow-1);
+  break-inside: avoid;
+}
+
+.post p {
+  font-family: var(--font-display);
+  font-size: 1.06rem;
+  line-height: 1.45;
+  margin: 0 0 0.85rem;
+}
+
+.post--sun {
+  background: var(--sun-soft);
+  border-color: var(--sun-deep);
+}
+
+.post__by {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+.post__initial {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--olive);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.post__time {
+  margin-inline-start: auto;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  /* "2 days" on one line: the by-line is already tight at 375px */
+  white-space: nowrap;
+}
+
+.wall__note {
+  margin-top: var(--s-3);
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+/* --- pricing ------------------------------------------------------------ */
+.plans {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+
+@media (min-width: 900px) {
+  .plans {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .plan--best {
+    margin-top: -1.25rem;
+    margin-bottom: 1.25rem;
+  }
+}
+
+.plan {
+  background: var(--paper-raised);
+  border: 1px solid rgba(92, 107, 52, 0.2);
+  border-radius: 18px;
+  padding: 1.4rem 1.35rem 1.5rem;
+  box-shadow: var(--shadow-1);
+}
+
+.plan--best {
+  background: var(--olive-800);
+  border-color: var(--olive-900);
+  color: #eef0e4;
+  box-shadow: var(--shadow-2);
+}
+
+.plan--best .tag {
+  color: var(--sun);
+}
+
+/* never the buttons: their own label colours must win over this */
+.plan--best a:not(.btn) {
+  color: var(--sun);
+}
+
+.plan--best .plan__row dt,
+.plan--best .muted,
+.plan--best .plan__pitch {
+  color: rgba(238, 240, 228, 0.78);
+}
+
+.plan__name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  margin: 0 0 0.35rem;
+}
+
+.plan__pitch {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  margin: 0 0 1rem;
+}
+
+.plan__price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+
+.plan__price small {
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.plan--best .plan__price small {
+  color: rgba(238, 240, 228, 0.7);
+}
+
+.plan__rows {
+  margin: 1.1rem 0 1.3rem;
+  border-top: 1px solid rgba(92, 107, 52, 0.18);
+}
+
+.plan__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(92, 107, 52, 0.14);
+  font-size: 0.92rem;
+}
+
+.plan__row dt {
+  color: var(--ink-faint);
+  margin: 0;
+}
+
+.plan__row dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: end;
+}
+
+.plan .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.student {
+  margin-top: var(--s-4);
+  padding: 1.25rem 1.35rem;
+  background: var(--sun-soft);
+  border: 1px solid var(--sun-deep);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (min-width: 820px) {
+  .student {
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.6fr);
+    align-items: center;
+    column-gap: var(--s-3);
+    row-gap: 0.35rem;
+  }
+
+  .student .fine {
+    grid-column: 2;
+  }
+}
+
+.student h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.student p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* --- faq ---------------------------------------------------------------- */
+.faqs {
+  display: grid;
+  gap: 0;
+  margin-top: var(--s-3);
+  border-top: 1px solid rgba(92, 107, 52, 0.2);
+}
+
+@media (min-width: 1000px) {
+  .faqs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--s-4);
+  }
+}
+
+.faq {
+  border-bottom: 1px solid rgba(92, 107, 52, 0.2);
+  padding-block: 0.15rem;
+}
+
+.faq summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 0;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq summary::after {
+  content: "+";
+  font-family: var(--font-mono);
+  color: var(--olive);
+  font-size: 1.15rem;
+  transition: transform var(--fast);
+}
+
+.faq[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.faq__body {
+  padding: 0 0 1.1rem;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.97rem;
+  max-width: 34rem;
+}
+
+/* --- download ----------------------------------------------------------- */
+.download h2 {
+  font-size: clamp(1.9rem, 5vw, 3rem);
+}
+
+.dl {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+
+@media (min-width: 980px) {
+  .dl {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.dl__list {
+  display: grid;
+  gap: var(--s-2);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 620px) {
+  .dl__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.dl__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.7rem;
+  row-gap: 0.1rem;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  min-height: 62px;
+  background: var(--paper-raised);
+  border: 1px solid rgba(92, 107, 52, 0.35);
+  border-radius: var(--radius);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--fast), box-shadow var(--fast), border-color var(--fast);
+}
+
+.dl__item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-1);
+  border-color: var(--olive);
+}
+
+.dl__item .dl__icon {
+  grid-row: 1 / span 2;
+}
+
+.dl__item[data-best] {
+  border-color: var(--olive);
+  background: #fffdf2;
+}
+
+.dl__item[aria-disabled="true"] {
+  cursor: default;
+  color: var(--ink-faint);
+  background: var(--paper-sunk);
+  border-style: dashed;
+}
+
+.dl__item[aria-disabled="true"]:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: rgba(92, 107, 52, 0.35);
+}
+
+.dl__icon {
+  width: 22px;
+  height: 22px;
+  color: var(--olive);
+}
+
+.dl__name {
+  font-weight: 600;
+  font-size: 0.98rem;
+  min-width: 0;
+}
+
+.dl__meta {
+  grid-column: 2;
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--ink-faint);
+}
+
+.dl__status {
+  margin-top: var(--s-2);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  min-height: 1.4em;
+}
+
+.dl__hint {
+  margin-top: var(--s-2);
+  font-size: 0.84rem;
+  color: var(--ink-faint);
+}
+
+.dl__aside {
+  padding: 1.2rem 1.3rem;
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  border: 1px solid rgba(92, 107, 52, 0.22);
+  box-shadow: var(--shadow-1);
+}
+
+.band--sun .dl__aside {
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.dl__aside ul {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.dl__aside li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  font-size: 0.92rem;
+}
+
+.dl__aside li::before {
+  content: "✓";
+  color: var(--olive);
+  font-weight: 700;
+}
+
+.band--sun {
+  background: var(--sun-soft);
+  border-top: 1px solid var(--sun-deep);
+}
+
+/* --- footer ------------------------------------------------------------- */
+.foot {
+  padding-block: var(--s-5) var(--s-3);
+  border-top: 1px solid rgba(92, 107, 52, 0.18);
+}
+
+.foot__grid {
+  display: grid;
+  gap: var(--s-3);
+}
+
+@media (min-width: 760px) {
+  .foot__grid {
+    grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr));
+  }
+}
+
+.foot h4 {
+  margin: 0 0 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--olive);
+}
+
+.foot ul {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.foot a {
+  border: 0;
+  color: var(--ink-soft);
+  font-size: 0.93rem;
+}
+
+.foot a:hover {
+  color: var(--olive);
+  text-decoration: underline;
+}
+
+.foot__say {
+  max-width: 30rem;
+  font-size: 0.93rem;
+  color: var(--ink-soft);
+}
+
+.foot__rule {
+  margin-top: var(--s-3);
+  padding-top: var(--s-2);
+  border-top: 1px solid rgba(92, 107, 52, 0.16);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+}
+
+.foot__rule a {
+  font-size: 0.82rem;
+}
+
+/* --- no-JS and small screens ------------------------------------------- */
+html:not(.js) .reveal {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 380px) {
+  :root {
+    --gutter: 1.1rem;
+  }
+
+  .plan__price {
+    font-size: 2.2rem;
+  }
+}

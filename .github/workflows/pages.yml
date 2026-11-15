@@ -1,0 +1,53 @@
+name: Deploy landing page
+
+# Publishes landing/ to GitHub Pages. One-time setup: Settings → Pages →
+# Source → "GitHub Actions". Then every push that touches landing/ is live in
+# about a minute at https://julie22-yaerin.github.io/PRESENTATION/
+#
+# The site is plain HTML/CSS/JS, so there is no build job: the copy step is a
+# whole-site upload and the i18n check is the only gate.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'landing/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify both languages are complete
+        run: node landing/scripts/check-i18n.mjs
+      - name: Report which download channels are live
+        run: bash landing/scripts/check-downloads.sh
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: landing
+      - id: deployment
+        uses: actions/deploy-pages@v4

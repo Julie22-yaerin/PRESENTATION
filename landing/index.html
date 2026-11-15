@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Lyceum — bấm một phím, nó nhìn slide và nghe bạn nói</title>
+<meta name="description" content="The Lyceum là app cho học sinh và sinh viên luyện thuyết trình ngay trên máy. Bấm một phím: nó nhìn slide, nghe bạn nói, chấm từng slide, rồi hỏi lại bạn như hội đồng thật. macOS và Windows.">
+
+<link rel="canonical" href="https://julie22-yaerin.github.io/PRESENTATION/">
+<link rel="alternate" hreflang="vi" href="https://julie22-yaerin.github.io/PRESENTATION/?lang=vi">
+<link rel="alternate" hreflang="en" href="https://julie22-yaerin.github.io/PRESENTATION/?lang=en">
+<link rel="alternate" hreflang="x-default" href="https://julie22-yaerin.github.io/PRESENTATION/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Lyceum">
+<meta property="og:locale" content="vi_VN">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:title" content="The Lyceum — bấm một phím, nó nhìn slide và nghe bạn nói">
+<meta property="og:description" content="Bấm một phím: nó nhìn slide của bạn, nghe bạn nói, chấm từng slide, rồi hỏi lại bạn như hội đồng thật.">
+<meta property="og:url" content="https://julie22-yaerin.github.io/PRESENTATION/">
+<meta property="og:image" content="https://julie22-yaerin.github.io/PRESENTATION/assets/mock-verdict.webp">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./assets/favicon.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<link rel="stylesheet" href="./styles/tokens.css">
+<link rel="stylesheet" href="./styles/base.css">
+<link rel="stylesheet" href="./styles/page.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+
+<body>
+<a class="skip" href="#main" data-i18n="skip">bỏ qua tới nội dung</a>
+
+<header class="mast">
+  <div class="wrap mast__row">
+    <a class="brand" href="./" aria-label="The Lyceum">
+      <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+        <rect width="40" height="40" rx="11" fill="#5c6b34"/>
+        <path d="M12.6 27.2c-2.4-1.7-3.9-4.5-3.9-7.7 0-1.3.2-2.5.7-3.6 1.4 1 2.3 2.7 2.3 4.6 0 2.4 1.1 4.6 3 6l-2.1.7z" fill="#f6e7a1"/>
+        <path d="M27.4 27.2c2.4-1.7 3.9-4.5 3.9-7.7 0-1.3-.2-2.5-.7-3.6-1.4 1-2.3 2.7-2.3 4.6 0 2.4-1.1 4.6-3 6l2.1.7z" fill="#f6e7a1"/>
+        <path d="M20 9.6c4.1 0 7.4 3.1 7.4 7 0 3.8-3.3 6.9-7.4 6.9-.8 0-1.6-.1-2.3-.3l-3.5 1.9.6-3.1c-1.4-1.4-2.3-3.2-2.3-5.4 0-3.9 3.3-7 7.5-7z" fill="#fbfaf4"/>
+        <circle cx="16.7" cy="16.6" r="1.2" fill="#5c6b34"/>
+        <circle cx="20.6" cy="16.6" r="1.2" fill="#5c6b34"/>
+        <circle cx="24.5" cy="16.6" r="1.2" fill="#e8d075"/>
+      </svg>
+      <b>the lyceum</b>
+    </a>
+
+    <nav class="mast__nav" aria-label="Điều hướng chính" data-i18n-aria="nav.main">
+      <a href="#does" data-i18n="nav.does">nó làm gì</a>
+      <a href="#room" data-i18n="nav.room">phòng hỏi</a>
+      <a href="#pricing" data-i18n="nav.pricing">giá</a>
+      <a href="#faq" data-i18n="nav.faq">hỏi đáp</a>
+    </nav>
+
+    <div class="mast__right">
+      <div class="lang" role="group" aria-label="Ngôn ngữ" data-i18n-aria="lang.label">
+        <button type="button" data-lang="vi" aria-pressed="true">VI</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <a class="btn mast__cta" href="#download" data-i18n="nav.download">tải về</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- 1 · manifesto ------------------------------------------------------- -->
+  <section class="band manifesto">
+    <div class="wrap wrap--col">
+      <p class="manifesto__lead" data-i18n="m.lead">người bạn luyện nói nằm trong máy bạn</p>
+
+      <div class="manifesto__lines">
+        <p data-i18n="m.l1">ai chấm bài thì bạn cũng có. nhưng rất ít người mở được nó đúng lúc cần.</p>
+        <p data-i18n="m.l2">chúng mình nghĩ vấn đề nằm ở chỗ bấm nút.</p>
+        <p data-i18n="m.l3">the lyceum thử kiểu khác: bấm một phím, nói như trước lớp, rồi nghe thật.</p>
+        <p data-i18n="m.l4">bản đầu còn mới. thử đi, rồi cho chúng mình biết bạn nghĩ gì.</p>
+      </div>
+
+      <p class="manifesto__note"><span data-i18n="m.note1">macOS 14.2 trở lên · Windows 10 và 11</span><br><span data-i18n="m.note2">dùng thử miễn phí, không cần thẻ.</span></p>
+    </div>
+
+    <div class="wrap">
+      <figure class="shot">
+        <img src="./assets/mock-verdict.webp" width="1440" height="960"
+             alt="Màn hình The Lyceum chấm một bài thuyết trình: điểm 7.4/10, năm thang điểm và một câu nên nói lại"
+             data-i18n-alt="alt.verdict">
+        <figcaption class="shot__cap" data-i18n="m.shotcap">một bài 6 phút: năm điểm, số đo giọng nói, và câu bạn nên nói lại.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 2 · what it does ---------------------------------------------------- -->
+  <section class="band band--sunk" id="does">
+    <div class="wrap wrap--col">
+      <div class="section-head">
+        <h2><span data-i18n="does.h1">bấm phím.</span> <span class="hl" data-i18n="does.h2">nói.</span> <span data-i18n="does.h3">nghe nhận xét.</span></h2>
+        <p data-i18n="does.sub">ba thứ, không có bảng điều khiển nào để học.</p>
+      </div>
+
+      <div class="does">
+        <article class="does__item reveal">
+          <h3><span data-i18n="does.1h">nó thấy</span> <span data-i18n="does.1h2">slide của bạn.</span></h3>
+          <p><span data-i18n="does.1a">giữ</span> <kbd>⌃⌥</kbd> <span data-i18n="does.1b">để hỏi. nó chụp đúng cửa sổ đang mở và đọc chữ trên đó.</span></p>
+        </article>
+        <article class="does__item reveal">
+          <h3><span data-i18n="does.2h">nó nghe</span> <span data-i18n="does.2h2">bạn nói.</span></h3>
+          <p data-i18n="does.2p">nó đếm bạn nói nhanh hay chậm, chỗ nào im lặng, câu nào thừa. Bật camera thì nó nhìn thêm dáng đứng và mắt bạn nhìn đâu.</p>
+        </article>
+        <article class="does__item reveal">
+          <h3><span data-i18n="does.3h">nó hỏi</span> <span data-i18n="does.3h2">lại bạn.</span></h3>
+          <p data-i18n="does.3p">khi bài nói kết thúc, năm AI nhỏ đưa tay. Bạn trả lời bằng miệng, không gõ gì.</p>
+        </article>
+      </div>
+
+      <figure class="shot">
+        <img src="./assets/mock-dashboard.webp" width="1440" height="960"
+             alt="Dashboard The Lyceum: điểm theo tuần, số lần luyện, và danh sách chỗ yếu cần sửa"
+             data-i18n-alt="alt.dashboard">
+        <figcaption class="shot__cap" data-i18n="does.shotcap">mọi buổi luyện nằm lại đây: điểm đi lên hay xuống, chỗ nào còn yếu.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 3 · the room -------------------------------------------------------- -->
+  <section class="band" id="room">
+    <div class="wrap wrap--col">
+      <div class="section-head">
+        <h2><span data-i18n="room.h1">xong bài,</span> <span class="hl" data-i18n="room.h2">năm tay giơ lên</span></h2>
+        <p data-i18n="room.sub">mỗi người là một AI nhỏ. họ nghe bạn từ đầu đến cuối. họ hỏi — và họ không trả lời hộ bạn.</p>
+      </div>
+
+      <figure class="shot">
+        <img src="./assets/mock-room.webp" width="1440" height="810"
+             alt="Phòng hỏi của The Lyceum xếp như một cuộc gọi video: năm ô, một ô đang nói"
+             data-i18n-alt="alt.room">
+        <figcaption class="shot__cap" data-i18n="room.shotcap">giống một cuộc gọi có năm người, chỉ khác là bạn là người bị hỏi.</figcaption>
+      </figure>
+
+      <p class="wall__note" data-i18n="room.note">phòng chỉ mở khi màn hình đang là công cụ làm slide: Canva, PowerPoint, Keynote hoặc Google Slides. Nó cũng tự biết bài đã kết thúc khi slide cảm ơn hiện lên hoặc bạn nói hết.</p>
+    </div>
+  </section>
+
+  <!-- 4 · wall ------------------------------------------------------------ -->
+  <section class="band band--sunk">
+    <div class="wrap wrap--col">
+      <div class="section-head">
+        <h2 data-i18n="wall.h">người ta nói gì</h2>
+        <p data-i18n="wall.sub">ghi chú từ nhóm thử nội bộ — chưa phải lời chứng thực đã xin phép.</p>
+      </div>
+
+      <div class="posts">
+        <article class="post">
+          <p data-i18n="wall.q1">nó bảo em bỏ câu "vâng thì" ở đầu mỗi ý. em đếm lại: 14 lần.</p>
+          <div class="post__by"><span class="post__initial">M</span><span data-i18n="wall.b1">lớp 12 · đội thi KHKT</span><span class="post__time" data-i18n="time.d2">2 ngày</span></div>
+        </article>
+        <article class="post post--sun">
+          <p data-i18n="wall.q2">trước đây em chỉ biết bài mình dài. giờ em biết nó dài ở slide 3.</p>
+          <div class="post__by"><span class="post__initial">A</span><span data-i18n="wall.b2">sinh viên năm 3</span><span class="post__time" data-i18n="time.d5">5 ngày</span></div>
+        </article>
+        <article class="post">
+          <p data-i18n="wall.q3">cái phần bị hỏi lại đáng giá hơn cả phần chấm. run rẩy thật.</p>
+          <div class="post__by"><span class="post__initial">K</span><span data-i18n="wall.b3">sinh viên bảo vệ đồ án</span><span class="post__time" data-i18n="time.w1">1 tuần</span></div>
+        </article>
+        <article class="post">
+          <p data-i18n="wall.q4">tôi cho cả lớp dùng. lần đầu tôi biết em nào hiểu mà không nói được.</p>
+          <div class="post__by"><span class="post__initial">T</span><span data-i18n="wall.b4">giáo viên hướng dẫn</span><span class="post__time" data-i18n="time.w1">1 tuần</span></div>
+        </article>
+        <article class="post post--sun">
+          <p data-i18n="wall.q5">bấm phím, nói, xong. không tài khoản rườm rà, không cài extension.</p>
+          <div class="post__by"><span class="post__initial">D</span><span data-i18n="wall.b5">học sinh lớp 11</span><span class="post__time" data-i18n="time.w2">2 tuần</span></div>
+        </article>
+        <article class="post">
+          <p data-i18n="wall.q6">nó nói em giải thích "hệ số tương quan" như cho người chưa học cấp III. em phải nói lại 3 lần.</p>
+          <div class="post__by"><span class="post__initial">N</span><span data-i18n="wall.b6">đội thi khoa học kĩ thuật</span><span class="post__time" data-i18n="time.w2">2 tuần</span></div>
+        </article>
+        <article class="post">
+          <p data-i18n="wall.q7">đo luôn được em im lặng 9 giây trước câu hỏi khó. em không biết mình làm vậy.</p>
+          <div class="post__by"><span class="post__initial">H</span><span data-i18n="wall.b7">sinh viên năm 2</span><span class="post__time" data-i18n="time.w3">3 tuần</span></div>
+        </article>
+        <article class="post post--sun">
+          <p data-i18n="wall.q8">slide cuối nó khuyên bỏ hết chữ, để một biểu đồ. em nghe. điểm lên.</p>
+          <div class="post__by"><span class="post__initial">P</span><span data-i18n="wall.b8">nhóm báo cáo đồ án</span><span class="post__time" data-i18n="time.mo1">1 tháng</span></div>
+        </article>
+        <article class="post">
+          <p data-i18n="wall.q9">mẹ em tưởng em có gia sư. em chỉ bấm phím.</p>
+          <div class="post__by"><span class="post__initial">L</span><span data-i18n="wall.b9">học sinh lớp 10</span><span class="post__time" data-i18n="time.mo1">1 tháng</span></div>
+        </article>
+        <article class="post">
+          <p data-i18n="wall.q10">tôi dùng để luyện 5 phút trước mỗi buổi họp phụ huynh. đáng ra nên có từ lâu.</p>
+          <div class="post__by"><span class="post__initial">G</span><span data-i18n="wall.b10">giáo viên chủ nhiệm</span><span class="post__time" data-i18n="time.mo1">1 tháng</span></div>
+        </article>
+      </div>
+
+      <p class="wall__note" data-i18n="wall.note">khi bạn cho phép, chúng mình sẽ thay các dòng này bằng lời của chính bạn.</p>
+    </div>
+  </section>
+
+  <!-- 5 · pricing --------------------------------------------------------- -->
+  <section class="band" id="pricing">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="price.h">the lyceum, theo cách của bạn</h2>
+        <p data-i18n="price.sub">ba gói đơn giản, hủy lúc nào cũng được.</p>
+      </div>
+
+      <div class="plans">
+        <article class="plan">
+          <h3 class="plan__name" data-i18n="plan.free.name">thử</h3>
+          <p class="plan__pitch" data-i18n="plan.free.pitch">xem nó làm được gì.</p>
+          <p class="plan__price">$0 <small data-i18n="plan.free.per">mãi mãi</small></p>
+          <dl class="plan__rows">
+            <div class="plan__row"><dt data-i18n="spec.runs">số lần luyện</dt><dd data-i18n="runs.free">3 mỗi tháng</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.room">phòng hỏi</dt><dd data-i18n="room.free">1 người (thử)</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.voice">đo giọng nói</dt><dd data-i18n="yes">có</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.dash">dashboard</dt><dd data-i18n="dash.free">7 ngày</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.seats">chỗ ngồi</dt><dd>1</dd></div>
+          </dl>
+          <a class="btn btn--ghost" href="#download" data-i18n="cta.free">dùng thử miễn phí</a>
+        </article>
+
+        <article class="plan plan--best">
+          <span class="tag" data-i18n="plan.best.tag">đáng tiền nhất</span>
+          <h3 class="plan__name" data-i18n="plan.student.name">học sinh</h3>
+          <p class="plan__pitch" data-i18n="plan.student.pitch">luyện bao nhiêu cũng được, trước mỗi buổi thi.</p>
+          <p class="plan__price">$6 <small data-i18n="plan.student.per">mỗi tháng</small></p>
+          <dl class="plan__rows">
+            <div class="plan__row"><dt data-i18n="spec.runs2">số lần luyện</dt><dd data-i18n="runs.student">không giới hạn</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.room2">phòng hỏi</dt><dd data-i18n="room.student">5 người</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.voice2">đo giọng nói</dt><dd data-i18n="yes2">có</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.dash2">dashboard</dt><dd data-i18n="dash.student">cả kỳ</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.seats2">chỗ ngồi</dt><dd>1</dd></div>
+          </dl>
+          <a class="btn btn--sun" href="#download" data-i18n="cta.student">lấy giá học sinh</a>
+        </article>
+
+        <article class="plan">
+          <h3 class="plan__name" data-i18n="plan.team.name">cả lớp &amp; đội thi</h3>
+          <p class="plan__pitch" data-i18n="plan.team.pitch">thầy cô xem được lớp luyện tới đâu.</p>
+          <p class="plan__price">$20 <small data-i18n="plan.team.per">mỗi tháng</small></p>
+          <dl class="plan__rows">
+            <div class="plan__row"><dt data-i18n="spec.runs3">số lần luyện</dt><dd data-i18n="runs.team">không giới hạn</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.room3">phòng hỏi</dt><dd data-i18n="room.team">5 người / lớp</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.voice3">đo giọng nói</dt><dd data-i18n="yes3">có</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.dash3">dashboard</dt><dd data-i18n="dash.team">xem chung</dd></div>
+            <div class="plan__row"><dt data-i18n="spec.seats3">chỗ ngồi</dt><dd>10</dd></div>
+          </dl>
+          <a class="btn btn--ghost" href="https://github.com/Julie22-yaerin/PRESENTATION/issues/new?title=Hoi%20cho%20lop" data-i18n="cta.team">hỏi cho lớp</a>
+        </article>
+      </div>
+
+      <div class="student">
+        <h3 data-i18n="student.h">là học sinh?</h3>
+        <p data-i18n="student.p">đưa email trường hoặc thẻ sinh viên, chúng mình giảm 50% tháng đầu gói học sinh.</p>
+        <p class="fine" data-i18n="student.note">áp dụng cho cả gói mới và đang dùng.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · faq ------------------------------------------------------------- -->
+  <section class="band band--sunk" id="faq">
+    <div class="wrap wrap--col">
+      <div class="section-head">
+        <h2 data-i18n="faq.h">câu hỏi thường gặp</h2>
+        <p data-i18n="faq.sub">về the lyceum, quyền riêng tư, và cách bắt đầu.</p>
+      </div>
+
+      <div class="faqs">
+        <details class="faq">
+          <summary data-i18n="faq.q1">the lyceum là gì?</summary>
+          <p class="faq__body" data-i18n="faq.a1">bấm một phím: nó nhìn slide của bạn, nghe bạn nói, rồi nói lại chỗ hay và chỗ chưa. Sau đó các AI trong phòng hỏi bạn như hội đồng thật.</p>
+        </details>
+        <details class="faq">
+          <summary data-i18n="faq.q2">dữ liệu của mình có riêng tư không?</summary>
+          <p class="faq__body" data-i18n="faq.a2">nó chỉ nhìn màn hình đúng lúc bạn bấm phím. ảnh chụp không lưu. chúng mình giữ vài dòng tóm tắt bằng chữ để nó có bối cảnh. xóa tài khoản là xóa hết.</p>
+        </details>
+        <details class="faq">
+          <summary data-i18n="faq.q3">nó có nhìn màn hình mình suốt không?</summary>
+          <p class="faq__body" data-i18n="faq.a3">không. không bao giờ, trừ khi bạn bấm phím.</p>
+        </details>
+        <details class="faq">
+          <summary data-i18n="faq.q4">nó làm được gì cụ thể?</summary>
+          <p class="faq__body" data-i18n="faq.a4">chấm từng slide, viết lại bullet, soạn speaker notes, hỏi và phản biện, đo tốc độ nói và khoảng lặng.</p>
+        </details>
+        <details class="faq">
+          <summary data-i18n="faq.q5">luyện và phòng hỏi khác gì nhau?</summary>
+          <p class="faq__body" data-i18n="faq.a5">luyện là bạn nói rồi nghe nhận xét. phòng hỏi là bạn bị hỏi lại. phòng chỉ mở khi màn hình đang là công cụ làm slide.</p>
+        </details>
+        <details class="faq">
+          <summary data-i18n="faq.q6">nó chạy với app nào?</summary>
+          <p class="faq__body" data-i18n="faq.a6">Canva, PowerPoint, Keynote, Google Slides — những chỗ bạn làm slide. nó không mở ở những chỗ khác.</p>
+        </details>
+        <details class="faq">
+          <summary data-i18n="faq.q7">cần mac không?</summary>
+          <p class="faq__body" data-i18n="faq.a7">macOS 14.2 trở lên, hoặc Windows 10 và 11.</p>
+        </details>
+        <details class="faq">
+          <summary data-i18n="faq.q8">miễn phí không?</summary>
+          <p class="faq__body" data-i18n="faq.a8">bản thử miễn phí, không cần thẻ. học sinh $6 mỗi tháng, hủy lúc nào cũng được.</p>
+        </details>
+        <details class="faq">
+          <summary data-i18n="faq.q9">hết lượt thì sao?</summary>
+          <p class="faq__body" data-i18n="faq.a9">phần luyện vẫn nghe bạn nói tới kỳ mới. phòng hỏi tạm nghỉ tới kỳ mới.</p>
+        </details>
+        <details class="faq">
+          <summary data-i18n="faq.q10">hủy được không?</summary>
+          <p class="faq__body" data-i18n="faq.a10">được. một nút, trả theo tháng, bạn dùng được tới hết kỳ đã trả.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · download -------------------------------------------------------- -->
+  <section class="band band--sun download" id="download">
+    <div class="wrap dl">
+      <div>
+        <h2 data-i18n="dl.h">tải về. nói một bài. xem nó nói gì.</h2>
+        <p><span data-i18n="dl.sub1">mở app, bấm</span> <kbd>⌃⌥</kbd> <span data-i18n="dl.sub2">, thuyết trình như trước lớp. xong.</span></p>
+
+        <div class="dl__list" data-download-target>
+          <noscript><p data-i18n="dl.noscript">bật JavaScript để chúng mình chọn đúng bản cho máy bạn, hoặc xem mục tải ở cuối trang.</p></noscript>
+        </div>
+
+        <p class="dl__status" id="dl-status" role="status"></p>
+        <p class="dl__hint"><span data-i18n="dl.hint1">chủ dự án:</span> <span data-i18n="dl.hint2">link tải nằm trong</span> <code>landing/download-config.json</code> — <span data-i18n="dl.hint3">đổi file đó là nút đổi theo, không cần sửa code.</span></p>
+      </div>
+
+      <aside class="dl__aside">
+        <h3 data-i18n="dl.aside.h">sau khi cài</h3>
+        <ul>
+          <li data-i18n="dl.aside.1">Mac hỏi xin mic và quyền nhìn màn hình — cho nó một lần.</li>
+          <li data-i18n="dl.aside.2">mở bài thuyết trình của bạn.</li>
+          <li data-i18n="dl.aside.3">giữ ⌃⌥ để hỏi, bấm nhanh để bắt đầu buổi luyện.</li>
+        </ul>
+        <p class="fine" style="margin-top:1rem"><a href="https://github.com/Julie22-yaerin/PRESENTATION/issues/new?title=The%20Lyceum" data-i18n="dl.contact">kẹt ở đâu? viết cho chúng mình.</a></p>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot__grid">
+      <div>
+        <a class="brand" href="./" aria-label="The Lyceum">
+          <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+            <rect width="40" height="40" rx="11" fill="#5c6b34"/>
+            <path d="M12.6 27.2c-2.4-1.7-3.9-4.5-3.9-7.7 0-1.3.2-2.5.7-3.6 1.4 1 2.3 2.7 2.3 4.6 0 2.4 1.1 4.6 3 6l-2.1.7z" fill="#f6e7a1"/>
+            <path d="M27.4 27.2c2.4-1.7 3.9-4.5 3.9-7.7 0-1.3-.2-2.5-.7-3.6-1.4 1-2.3 2.7-2.3 4.6 0 2.4-1.1 4.6-3 6l2.1.7z" fill="#f6e7a1"/>
+            <path d="M20 9.6c4.1 0 7.4 3.1 7.4 7 0 3.8-3.3 6.9-7.4 6.9-.8 0-1.6-.1-2.3-.3l-3.5 1.9.6-3.1c-1.4-1.4-2.3-3.2-2.3-5.4 0-3.9 3.3-7 7.5-7z" fill="#fbfaf4"/>
+            <circle cx="16.7" cy="16.6" r="1.2" fill="#5c6b34"/>
+            <circle cx="20.6" cy="16.6" r="1.2" fill="#5c6b34"/>
+            <circle cx="24.5" cy="16.6" r="1.2" fill="#e8d075"/>
+          </svg>
+          <b>the lyceum</b>
+        </a>
+        <p class="foot__say" data-i18n="foot.say">phòng luyện nói cho học sinh và sinh viên. bấm phím, nói, nghe lại sự thật.</p>
+      </div>
+
+      <nav aria-label="Sản phẩm" data-i18n-aria="foot.nav1">
+        <h4 data-i18n="foot.prod">sản phẩm</h4>
+        <ul>
+          <li><a href="#does" data-i18n="nav.does2">nó làm gì</a></li>
+          <li><a href="#room" data-i18n="nav.room2">phòng hỏi</a></li>
+          <li><a href="#pricing" data-i18n="nav.pricing2">giá</a></li>
+          <li><a href="#faq" data-i18n="nav.faq2">hỏi đáp</a></li>
+          <li><a href="#download" data-i18n="nav.download2">tải về</a></li>
+        </ul>
+      </nav>
+
+      <nav aria-label="Giúp đỡ" data-i18n-aria="foot.nav2">
+        <h4 data-i18n="foot.help">giúp đỡ</h4>
+        <ul>
+          <li><a href="https://github.com/Julie22-yaerin/PRESENTATION/issues/new" data-i18n="foot.email">email hỗ trợ</a></li>
+          <li><a href="https://github.com/Julie22-yaerin/PRESENTATION" data-i18n="foot.code">mã nguồn &amp; bản thử</a></li>
+          <li><a href="https://github.com/Julie22-yaerin/PRESENTATION/releases" data-i18n="foot.notes">ghi chú phát hành</a></li>
+          <li><a href="https://github.com/Julie22-yaerin/PRESENTATION/blob/main/README.md" data-i18n="foot.appreadme">cách chạy app</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="foot__rule">
+      <span><span data-i18n="foot.credit1">dựng từ</span> <a href="https://github.com/farzaa/clicky-main">Clicky (MIT)</a> <span data-i18n="foot.credit2">của</span> <a href="https://github.com/farzaa">@farzaa</a>. <span data-i18n="foot.credit3">đổi tên, đổi mục đích, giữ nguyên giấy phép.</span></span>
+      <span>© 2026 the lyceum</span>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

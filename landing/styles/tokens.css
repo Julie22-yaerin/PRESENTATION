@@ -1,0 +1,62 @@
+/* ==========================================================================
+   The Lyceum — design tokens.
+   Palette: olive (brand), warm white (paper), pastel yellow (the highlighter).
+   Everything else in this project reads from here.
+   ========================================================================== */
+
+:root {
+  /* olive */
+  --olive-900: #1d2317;
+  --olive-800: #2c3524;
+  --olive-700: #3f4b30;
+  --olive: #5c6b34;
+  --olive-soft: #778752;
+  --olive-tint: #e9eddc;
+  --olive-line: #cdd6bb;
+
+  /* paper / white */
+  --paper: #fbfaf4;
+  --paper-raised: #ffffff;
+  --paper-sunk: #f4f2e8;
+
+  /* pastel yellow: only ever used as a highlight or a accent chip */
+  --sun: #f6e7a1;
+  --sun-deep: #e8d075;
+  --sun-soft: #fbf3cf;
+
+  /* ink */
+  --ink: #22271b;
+  --ink-soft: #4a5241;
+  --ink-faint: #79806a;
+
+  /* status */
+  --stop: #a8452f;
+  --go: #4f7a3f;
+
+  /* type: Fraunces is the voice, Be Vietnam Pro carries the sentences.
+     Both ship a vietnamese subset, so dấu thanh never falls back. */
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-body: "Be Vietnam Pro", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* 8pt grid */
+  --s-1: 0.5rem;
+  --s-2: 1rem;
+  --s-3: 1.5rem;
+  --s-4: 2.5rem;
+  --s-5: 4rem;
+  --s-6: 6rem;
+  --s-7: 9rem;
+
+  --measure: 44rem;
+  --measure-wide: 66rem;
+  --gutter: clamp(1.25rem, 5vw, 4rem);
+  --radius: 14px;
+  --radius-lg: 22px;
+
+  --shadow-1: 0 1px 2px rgba(34, 39, 27, 0.05), 0 8px 24px -12px rgba(34, 39, 27, 0.18);
+  --shadow-2: 0 2px 4px rgba(34, 39, 27, 0.06), 0 24px 48px -20px rgba(34, 39, 27, 0.28);
+
+  --fast: 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  --slow: 420ms cubic-bezier(0.16, 0.84, 0.24, 1);
+}
