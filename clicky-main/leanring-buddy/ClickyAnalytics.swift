@@ -189,6 +189,40 @@ enum ClickyAnalytics {
         ])
     }
 
+    /// The first-run questionnaire was finished. Deliberately counts and switches:
+    /// which year group, and who they are facing, tell us whether the product is aimed
+    /// right. A school name, a competition name and a student's own words are exactly
+    /// the things we promised never to send, so this signature cannot even receive them.
+    static func trackLyceumOnboardingCompleted(gradeKind: String,
+                                               audienceKinds: [String],
+                                               hasOtherAudienceNote: Bool,
+                                               isCompetition: Bool,
+                                               agentsCustomised: Int) {
+        PostHogSDK.shared.capture("lyceum_onboarding_completed", properties: [
+            "grade_kind": gradeKind,
+            "audience_kinds": audienceKinds,
+            "audience_count": audienceKinds.count,
+            "has_other_audience_note": hasOtherAudienceNote,
+            "is_competition": isCompetition,
+            "agents_customised": agentsCustomised
+        ])
+    }
+    /// One of the five agents was saved. Only how much shape it has, never what it is
+    /// called - a student may name an agent after a real teacher.
+    static func trackLyceumAgentSaved(criteriaCount: Int, hasOwnName: Bool) {
+        PostHogSDK.shared.capture("lyceum_agent_saved", properties: [
+            "criteria_count": criteriaCount,
+            "has_own_name": hasOwnName
+        ])
+    }
+    /// A section of the settings sheet was opened, so we learn whether anyone finds the
+    /// gear parked at the bottom of the sidebar at all.
+    static func trackLyceumSettingsOpened(section: String) {
+        PostHogSDK.shared.capture("lyceum_settings_opened", properties: [
+            "section": section
+        ])
+    }
+
     // MARK: - Errors
 
     /// An error occurred during the AI response pipeline.

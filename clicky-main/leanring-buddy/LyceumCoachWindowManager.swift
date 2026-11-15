@@ -60,7 +60,7 @@ final class LyceumCoachWindowManager {
 
         let coachPanelView = LyceumCoachPanelView(coachManager: manager)
             .frame(width: Self.panelWidth)
-            .environment(\.colorScheme, .dark)
+            .lyceumColorScheme()
 
         let hostingView = NSHostingView(rootView: AnyView(coachPanelView))
         hostingView.frame = NSRect(

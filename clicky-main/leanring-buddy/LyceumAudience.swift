@@ -62,6 +62,278 @@ enum LyceumAudienceTone: String, CaseIterable, Codable {
     }
 }
 
+// MARK: - How an agent is set up
+
+/// The job an agent is given in the Agent Studio. Stored on the member as a raw
+/// value string: a room saved before these enums existed still decodes, and a
+/// renamed case cannot corrupt someone's roster.
+enum LyceumAgentFunction: String, CaseIterable, Codable {
+    case asksQuestions
+    case critiques
+    case factChecks
+    case suggestsSlideEdits
+    case checksClarity
+    case keepsTime
+    case encourages
+    case playsDevilsAdvocate
+
+    var displayName: String {
+        switch self {
+        case .asksQuestions: return "Asks questions"
+        case .critiques: return "Critiques"
+        case .factChecks: return "Fact-checks"
+        case .suggestsSlideEdits: return "Edits the slides"
+        case .checksClarity: return "Checks clarity"
+        case .keepsTime: return "Keeps time"
+        case .encourages: return "Encourages"
+        case .playsDevilsAdvocate: return "Devil's advocate"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .asksQuestions: return "questionmark.bubble"
+        case .critiques: return "exclamationmark.bubble"
+        case .factChecks: return "checkmark.shield"
+        case .suggestsSlideEdits: return "wand.and.stars"
+        case .checksClarity: return "text.magnifyingglass"
+        case .keepsTime: return "timer"
+        case .encourages: return "hand.thumbsup"
+        case .playsDevilsAdvocate: return "theatermasks"
+        }
+    }
+
+    /// Written for the model, not the user.
+    var briefForModel: String {
+        switch self {
+        case .asksQuestions:
+            return "Ask one question the talk cannot answer without thinking."
+        case .critiques:
+            return "Name the weakest part of the argument and say why it is weak."
+        case .factChecks:
+            return "Hold each number and claim against what was actually shown, and flag what was not."
+        case .suggestsSlideEdits:
+            return "Point at one specific slide and say what would make it carry the point."
+        case .checksClarity:
+            return "Say where the explanation lost you and ask for that sentence again."
+        case .keepsTime:
+            return "Hold the clock: what was promised, what was reached, what to cut next time."
+        case .encourages:
+            return "Find one thing that genuinely worked and say exactly why it worked."
+        case .playsDevilsAdvocate:
+            return "Argue the opposite position in good faith and ask them to answer it."
+        }
+    }
+}
+
+/// How the agent behaves while doing the job.
+enum LyceumAgentTrait: String, CaseIterable, Codable {
+    case curious
+    case blunt
+    case patient
+    case skeptical
+    case warm
+    case strict
+    case playful
+    case formal
+
+    var displayName: String {
+        switch self {
+        case .curious: return "Curious"
+        case .blunt: return "Blunt"
+        case .patient: return "Patient"
+        case .skeptical: return "Skeptical"
+        case .warm: return "Warm"
+        case .strict: return "Strict"
+        case .playful: return "Playful"
+        case .formal: return "Formal"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .curious: return "lightbulb"
+        case .blunt: return "hammer"
+        case .patient: return "hourglass"
+        case .skeptical: return "questionmark.circle"
+        case .warm: return "sun.max"
+        case .strict: return "checkmark.circle"
+        case .playful: return "face.smiling"
+        case .formal: return "briefcase"
+        }
+    }
+
+    /// Written for the model, not the user.
+    var briefForModel: String {
+        switch self {
+        case .curious:
+            return "Genuinely wants to know, and follows the answer one step past the question."
+        case .blunt:
+            return "Says the flat thing without padding. Short, never cruel."
+        case .patient:
+            return "Lets the speaker find the words instead of finishing their sentence."
+        case .skeptical:
+            return "Treats the claim as unproven until the evidence is named out loud."
+        case .warm:
+            return "Encouraging, but honest about what was missing."
+        case .strict:
+            return "Marks against the rubric and does not round the judgement up."
+        case .playful:
+            return "Light in the wording, sharp on the substance."
+        case .formal:
+            return "Speaks like a chair of judges: measured sentences, no small talk."
+        }
+    }
+}
+
+/// What the agent is watching for while the talk runs.
+enum LyceumAgentFocus: String, CaseIterable, Codable {
+    case evidence
+    case structure
+    case mechanism
+    case plainLanguage
+    case claimsMatters
+    case slidesAndVisuals
+    case delivery
+    case originality
+
+    var displayName: String {
+        switch self {
+        case .evidence: return "Evidence"
+        case .structure: return "Structure"
+        case .mechanism: return "Mechanism"
+        case .plainLanguage: return "Plain language"
+        case .claimsMatters: return "Why it matters"
+        case .slidesAndVisuals: return "Slides and visuals"
+        case .delivery: return "Delivery"
+        case .originality: return "Originality"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .evidence: return "chart.bar"
+        case .structure: return "list.number"
+        case .mechanism: return "cog.circle"
+        case .plainLanguage: return "text.bubble"
+        case .claimsMatters: return "target"
+        case .slidesAndVisuals: return "rectangle.on.rectangle"
+        case .delivery: return "mic"
+        case .originality: return "sparkles"
+        }
+    }
+
+    /// Written for the model, not the user.
+    var briefForModel: String {
+        switch self {
+        case .evidence:
+            return "Cares whether what was measured can carry what was claimed."
+        case .structure:
+            return "Cares whether the argument goes somewhere in an orderly line."
+        case .mechanism:
+            return "Cares about the how, not only the that."
+        case .plainLanguage:
+            return "Cares that someone outside the subject could follow every sentence."
+        case .claimsMatters:
+            return "Cares why anybody should care about the result."
+        case .slidesAndVisuals:
+            return "Cares whether the slides and charts are doing their job."
+        case .delivery:
+            return "Cares about pace, eye contact, and an ending that lands."
+        case .originality:
+            return "Cares whether this is the speaker's own thinking or a summary of sources."
+        }
+    }
+}
+
+/// The three chip groups, and the one place that knows which stored array
+/// belongs to which enum, so callers never switch on the case three times.
+enum LyceumAgentCriterionGroup: String, CaseIterable, Codable {
+    case functions
+    case traits
+    case focus
+
+    var displayName: String {
+        switch self {
+        case .functions: return "What they do"
+        case .traits: return "How they act"
+        case .focus: return "What they watch"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .functions: return "hand.point.up.left"
+        case .traits: return "face"
+        case .focus: return "target"
+        }
+    }
+
+    /// One line under the chip row.
+    var hintForUser: String {
+        switch self {
+        case .functions: return "The job they are given when the talk ends."
+        case .traits: return "How they behave while doing it."
+        case .focus: return "What they are watching for in the room."
+        }
+    }
+
+    var options: [LyceumAgentCriterionOption] {
+        switch self {
+        case .functions:
+            return LyceumAgentFunction.allCases.map { option in
+                LyceumAgentCriterionOption(group: .functions, rawValue: option.rawValue,
+                                           displayName: option.displayName, symbol: option.symbol,
+                                           briefForModel: option.briefForModel)
+            }
+        case .traits:
+            return LyceumAgentTrait.allCases.map { option in
+                LyceumAgentCriterionOption(group: .traits, rawValue: option.rawValue,
+                                           displayName: option.displayName, symbol: option.symbol,
+                                           briefForModel: option.briefForModel)
+            }
+        case .focus:
+            return LyceumAgentFocus.allCases.map { option in
+                LyceumAgentCriterionOption(group: .focus, rawValue: option.rawValue,
+                                           displayName: option.displayName, symbol: option.symbol,
+                                           briefForModel: option.briefForModel)
+            }
+        }
+    }
+
+    /// nil for a raw value this build does not know, so a caller can show the
+    /// stored string instead of silently dropping what the user still has saved.
+    func title(forRawValue rawValue: String) -> String? {
+        switch self {
+        case .functions: return LyceumAgentFunction(rawValue: rawValue)?.displayName
+        case .traits: return LyceumAgentTrait(rawValue: rawValue)?.displayName
+        case .focus: return LyceumAgentFocus(rawValue: rawValue)?.displayName
+        }
+    }
+
+    /// Sorts stored raw values into declaration order and de-duplicates them, so
+    /// the same setup always reads the same way to the model.
+    func canonicalOrder(of rawValues: [String]) -> [String] {
+        let stored = Set(rawValues)
+        let knownValues = options.map(\.rawValue)
+        let known = knownValues.filter { stored.contains($0) }
+        let unknown = stored.subtracting(knownValues).sorted()
+        return known + unknown
+    }
+}
+
+/// One selectable chip: a raw value inside one group, flattened so SwiftUI can
+/// iterate all three groups without existential protocol values.
+struct LyceumAgentCriterionOption: Identifiable, Hashable {
+    let group: LyceumAgentCriterionGroup
+    let rawValue: String
+    let displayName: String
+    let symbol: String
+    let briefForModel: String
+
+    var id: String { "\(group.rawValue).\(rawValue)" }
+}
+
 struct LyceumAudienceMember: Codable, Identifiable, Equatable {
     /// Stable key so a saved question can be matched to a member even after the
     /// user renames them.
@@ -75,6 +347,18 @@ struct LyceumAudienceMember: Codable, Identifiable, Equatable {
     /// which is the default so a fresh install still sounds like five people.
     var elevenLabsVoiceID: String?
 
+    /// Agent Studio criteria, stored as raw values and optional so a roster saved
+    /// before this feature decodes unchanged (nil means "never configured", which
+    /// is not the same as an empty array, but reads the same to the model).
+    var functions: [String]?
+    var traits: [String]?
+    var focus: [String]?
+
+    /// Five criteria per agent is the whole point of the limit: a student can hold
+    /// a mental model of a person made of five choices, and a prompt stuffed with
+    /// fifteen adjectives stops changing the questions at all.
+    static let maximumCriteria = 5
+
     var initials: String {
         let words = name.split(separator: " ")
         let letters = words.prefix(2).compactMap { $0.first }
@@ -85,11 +369,124 @@ struct LyceumAudienceMember: Codable, Identifiable, Equatable {
     var hasCustomVoice: Bool {
         (elevenLabsVoiceID?.isEmpty == false)
     }
+
+    // MARK: Criteria
+
+    var criteriaCount: Int {
+        (functions?.count ?? 0) + (traits?.count ?? 0) + (focus?.count ?? 0)
+    }
+
+    var hasCriteria: Bool { criteriaCount > 0 }
+
+    /// Whether the student renamed this seat. Compared against the default roster on
+    /// purpose: a name that still matches the defaults is not an act of ownership.
+    var hasOwnName: Bool {
+        guard let original = LyceumAudienceRoster.defaultMembers.first(where: { $0.id == id }) else {
+            return true
+        }
+        return original.name != name
+    }
+
+    var isAtCriteriaLimit: Bool { criteriaCount >= Self.maximumCriteria }
+
+    var criteriaSlotsLeft: Int { max(0, Self.maximumCriteria - criteriaCount) }
+
+    /// Stored values for one group, in whatever order they were saved.
+    func rawValues(in group: LyceumAgentCriterionGroup) -> [String] {
+        switch group {
+        case .functions: return functions ?? []
+        case .traits: return traits ?? []
+        case .focus: return focus ?? []
+        }
+    }
+
+    func isSelected(_ option: LyceumAgentCriterionOption) -> Bool {
+        rawValues(in: option.group).contains(option.rawValue)
+    }
+
+    mutating func setRawValues(_ values: [String], in group: LyceumAgentCriterionGroup) {
+        let canonical = group.canonicalOrder(of: values)
+        switch group {
+        case .functions: functions = canonical.isEmpty ? nil : canonical
+        case .traits: traits = canonical.isEmpty ? nil : canonical
+        case .focus: focus = canonical.isEmpty ? nil : canonical
+        }
+    }
+
+    /// The toggle the Studio calls. Pure, because the rule "the sixth choice is
+    /// refused" has to hold wherever it is called and cannot be enforced from a
+    /// view. Turning a chosen criterion off is always allowed, so this only
+    /// refuses an addition that would cross `maximumCriteria` — it returns the
+    /// member unchanged rather than dropping an older choice behind the user's back.
+    func toggling(_ group: LyceumAgentCriterionGroup, _ rawValue: String) -> LyceumAudienceMember {
+        var copy = self
+        let alreadySelected = copy.rawValues(in: group).contains(rawValue)
+        if !alreadySelected && copy.isAtCriteriaLimit {
+            return copy
+        }
+        var values = copy.rawValues(in: group)
+        if alreadySelected {
+            values.removeAll { $0 == rawValue }
+        } else {
+            values.append(rawValue)
+        }
+        copy.setRawValues(values, in: group)
+        return copy
+    }
+
+    func toggling(_ option: LyceumAgentCriterionOption) -> LyceumAudienceMember {
+        toggling(option.group, option.rawValue)
+    }
+
+    /// Pure: drop every criterion for this agent. Name, role, persona, tone and
+    /// voice stay, so the prompt falls back to the written persona.
+    func clearingCriteria() -> LyceumAudienceMember {
+        var copy = self
+        copy.functions = nil
+        copy.traits = nil
+        copy.focus = nil
+        return copy
+    }
+
+    /// The line that goes into the panel prompt:
+    /// "Asks questions, Fact-checks · Skeptical · Evidence, Mechanism".
+    var criteriaSummaryForModel: String {
+        let sections = LyceumAgentCriterionGroup.allCases.compactMap { group -> String? in
+            let titles = group.canonicalOrder(of: rawValues(in: group)).map { group.title(forRawValue: $0) ?? $0 }
+            return titles.isEmpty ? nil : titles.joined(separator: ", ")
+        }
+        return sections.joined(separator: " · ")
+    }
+
+    /// Each selected criterion expanded into the sentence written for it, in group
+    /// order. Kept apart from the summary: the prompt wants one scannable label
+    /// line plus one expanded line, not fifteen sentences per person.
+    var criteriaBriefsForModel: String {
+        var briefs: [String] = []
+        for group in LyceumAgentCriterionGroup.allCases {
+            for rawValue in group.canonicalOrder(of: rawValues(in: group)) {
+                switch (group, rawValue) {
+                case (.functions, let value):
+                    if let function = LyceumAgentFunction(rawValue: value) { briefs.append(function.briefForModel) }
+                case (.traits, let value):
+                    if let trait = LyceumAgentTrait(rawValue: value) { briefs.append(trait.briefForModel) }
+                case (.focus, let value):
+                    if let focus = LyceumAgentFocus(rawValue: value) { briefs.append(focus.briefForModel) }
+                default:
+                    break
+                }
+            }
+        }
+        return briefs.joined(separator: " ")
+    }
 }
 
 enum LyceumAudienceRoster {
     private static let defaultsKey = "lyceumAudienceRoster"
-    static let maximumMembers = 6
+    /// Five seats, matching `defaultMembers` and the batch-5 brief: the Agent
+    /// Studio shows one row per seat, and a saved room with six is truncated by
+    /// `load()` rather than rejected. Every caller reads this constant.
+    static let maximumMembers = 5
     static let minimumMembers = 1
 
     /// Five kinds of trouble, in the shape of the rooms these users actually
@@ -164,6 +561,105 @@ enum LyceumAudienceRoster {
 
     static func resetToDefault() {
         UserDefaults.standard.removeObject(forKey: defaultsKey)
+    }
+}
+
+// MARK: - Turning the answers into a room
+
+/// Onboarding promises "the practice panel is built out of your answer", and this is
+/// where that promise is kept. It only ever touches a seat the student has not briefed
+/// themselves, so a hand-built room survives the next questionnaire.
+enum LyceumAudienceTuning {
+    /// A year group, or nil for university / other / unanswered.
+    static func schoolYear(of profile: LyceumLearnerProfile) -> Int? {
+        guard let grade = profile.grade else { return nil }
+        if case .k12(let year) = grade { return year }
+        return nil
+    }
+
+    /// True when the student wrote or picked criteria for this seat.
+    static func isSeatCustomised(_ member: LyceumAudienceMember) -> Bool {
+        member.hasCriteria
+    }
+
+    static func customisedSeatCount(in members: [LyceumAudienceMember]) -> Int {
+        members.filter { isSeatCustomised($0) }.count
+    }
+
+    /// One step harsher / kinder, with the ends kept.
+    private static func pushed(_ tone: LyceumAudienceTone, harder: Bool) -> LyceumAudienceTone {
+        switch (tone, harder) {
+        case (.gentle, true): return .standard
+        case (.standard, true): return .brutal
+        case (.brutal, false): return .standard
+        case (.standard, false): return .gentle
+        default: return tone
+        }
+    }
+
+    static func tuned(_ members: [LyceumAudienceMember],
+                      for profile: LyceumLearnerProfile) -> [LyceumAudienceMember] {
+        guard profile.hasAnyAnswer else { return members }
+
+        let year = schoolYear(of: profile)
+        // A judged competition raises the bar; being twelve lowers it. Both are applied
+        // to the harshness dial only — the roles stay recognisable.
+        let harsher = profile.isCompeting
+        let younger = (year ?? 99) <= 8
+
+        var tuned: [LyceumAudienceMember] = []
+        for member in members {
+            var seat = member
+            if isSeatCustomised(seat) {
+                tuned.append(seat)
+                continue
+            }
+
+            seat.tone = pushed(seat.tone, harder: harsher)
+            if younger, seat.tone == .brutal {
+                seat.tone = .standard
+            }
+
+            switch seat.id {
+            case "chair":
+                if !profile.audiences.contains(.judgingPanel) {
+                    seat.role = "Discussion facilitator"
+                    seat.persona = "Runs the room rather than scoring it. Wants to hear the point of the talk in one sentence and asks for it plainly."
+                    seat.tone = pushed(seat.tone, harder: false)
+                }
+            case "outsideJudge":
+                if profile.isCompeting {
+                    seat.role = "Judge from a neighbouring field"
+                    seat.persona = "Assesses projects all day and is not in this field. Interested, quick, and the first to ask what the result is actually for."
+                }
+            case "classmate":
+                if profile.audiences.contains(.parents), !profile.audiences.contains(.classmates) {
+                    seat.role = "A parent who works outside this field"
+                    seat.persona = "Intelligent, no background in the subject, and proudly so. Asks the thing their own job would make them ask."
+                } else if profile.audiences.contains(.publicAudience) {
+                    seat.role = "Someone from the audience"
+                    seat.persona = "Heard the talk once and cannot look anything up. If a sentence needed the slide to make sense, they say so."
+                }
+                if younger {
+                    seat.persona = "Same age as the speaker and no background at all. If the explanation leaned on the hard words, they ask for it again without them."
+                }
+            case "timekeeper":
+                if profile.isCompeting {
+                    seat.role = "Contest timekeeper"
+                    seat.persona = "Holds the clock the rules give you. Says what was promised, what fitted, and what would be cut to land it comfortably."
+                }
+            default:
+                break
+            }
+
+            // Whatever the audience answer said, it is worth the model hearing it once.
+            let who = profile.audiences.map { $0.contextPhrase }
+            if !who.isEmpty {
+                seat.persona += " They are one of: " + who.joined(separator: ", ") + "."
+            }
+            tuned.append(seat)
+        }
+        return tuned
     }
 }
 
@@ -507,7 +1003,21 @@ enum LyceumAudiencePrompts {
         for member in roster {
             lines.append("- memberId: \(member.id) | name: \(member.name) | role: \(member.role)")
             lines.append("  character: \(member.persona)")
+            // Kept alongside the persona rather than replacing it: the written
+            // character is still who they are, the criteria are what the user
+            // decided they should do with it.
+            if member.hasCriteria {
+                lines.append("  what the user set for them: \(member.criteriaSummaryForModel)")
+                lines.append("  follow those choices: \(member.criteriaBriefsForModel)")
+            }
             lines.append("  how hard they push: \(member.tone.briefForModel)")
+        }
+
+        let learnerLine = LyceumProfileStore.shared.contextLineForModel
+        if !learnerLine.isEmpty {
+            lines.append("")
+            lines.append("WHO IS IN FRONT OF THIS ROOM: \(learnerLine)")
+            lines.append("Calibrate what you ask to that room, never to a professional conference. A student who is eleven years old and explaining a science project to their class deserves questions they can answer out loud on the spot.")
         }
 
         lines.append(contentsOf: [
@@ -555,18 +1065,27 @@ enum LyceumAudiencePrompts {
 
     /// The agent hears the user's answer and reacts in character, once.
     static func reactionSystemPrompt(for member: LyceumAudienceMember) -> String {
-        """
-        You are \(member.name), \(member.role), in the question round after a student's presentation. \(member.persona)
-        \(member.tone.briefForModel)
-        You asked one question. The student has now answered it out loud.
-        Reply in character, in the SAME language the speaker is using.
-        Two sentences maximum for the reply. It must be sayable out loud — no lists, no markdown.
-        Decide honestly whether the answer held up: did they answer the question that was asked, and did they give a reason, an example or a number?
-        "I don't know, I would check X" is a good answer and counts as held. Say so plainly, because that is the habit that saves them in a real panel.
-        A confident repeat of the slide is not an answer. Only add a followUp when the answer was weak or dodged, and make it one short question.
-        Never mock, never comment on the person, only on the work.
-        ANSWER WITH JSON ONLY: {"reply":"...","verdict":"held|weak|dodged","followUp":"... or empty string"}
-        """
+        var lines: [String] = [
+            "You are \(member.name), \(member.role), in the question round after a student's presentation. \(member.persona)"
+        ]
+        // Same rule as the panel prompt: a criterion the user chose has to survive
+        // into the follow-up, or the Studio only shapes half of the round.
+        if member.hasCriteria {
+            lines.append("What the user set for you: \(member.criteriaSummaryForModel)")
+            lines.append("Follow those choices: \(member.criteriaBriefsForModel)")
+        }
+        lines.append(contentsOf: [
+            member.tone.briefForModel,
+            "You asked one question. The student has now answered it out loud.",
+            "Reply in character, in the SAME language the speaker is using.",
+            "Two sentences maximum for the reply. It must be sayable out loud — no lists, no markdown.",
+            "Decide honestly whether the answer held up: did they answer the question that was asked, and did they give a reason, an example or a number?",
+            "\"I don't know, I would check X\" is a good answer and counts as held. Say so plainly, because that is the habit that saves them in a real panel.",
+            "A confident repeat of the slide is not an answer. Only add a followUp when the answer was weak or dodged, and make it one short question.",
+            "Never mock, never comment on the person, only on the work.",
+            "ANSWER WITH JSON ONLY: {\"reply\":\"...\",\"verdict\":\"held|weak|dodged\",\"followUp\":\"... or empty string\"}"
+        ])
+        return lines.joined(separator: "\n")
     }
 
     static func reactionUserPrompt(member: LyceumAudienceMember, question: String, answer: String) -> String {

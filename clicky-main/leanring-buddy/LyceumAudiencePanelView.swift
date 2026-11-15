@@ -40,7 +40,7 @@ struct LyceumAudiencePanelView: View {
             controlBar
         }
         .background(DS.Colors.background)
-        .environment(\.colorScheme, .dark)
+        .lyceumColorScheme()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -545,7 +545,7 @@ private struct LyceumRosterPopover: View {
         }
         .frame(width: 330, height: 420)
         .background(DS.Colors.surface1)
-        .environment(\.colorScheme, .dark)
+        .lyceumColorScheme()
     }
 }
 
@@ -622,6 +622,6 @@ private struct LyceumQuestionLogPopover: View {
         }
         .frame(width: 340, height: 420)
         .background(DS.Colors.surface1)
-        .environment(\.colorScheme, .dark)
+        .lyceumColorScheme()
     }
 }

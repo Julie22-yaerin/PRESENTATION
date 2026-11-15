@@ -13,6 +13,24 @@ Four drills, picked in the panel:
 
 Holding `Control + Option` still does the original thing: push-to-talk, screenshot, question, answer. Nothing was taken away.
 
+### It asks five questions first
+
+A fresh install does not open a panel. It opens the dashboard and asks: **which year are you in**,
+**who are you presenting to** (teachers, classmates, a judging panel, parents, a club, a public
+audience, or something you type yourself), **is this a competition**, and if so **what it is called**.
+Then it shows the five seats already filled and lets you keep them or brief your own.
+
+The answers are not decoration. The year group sets the vocabulary ceiling and how hard anyone is
+allowed to push; the audience changes which seats exist — say you are presenting to parents and the
+classmate becomes a parent who works outside your field; a competition turns every dial one step
+harsher and makes the timekeeper a contest timekeeper. That single line goes into the grading prompt
+and into the room's prompt, and you can read it back verbatim in **Settings → Getting started**, so
+you always know what the model was told about you. Nothing leaves the Mac about you: the analytics
+event carries a bucket (`k12` / `university` / `other`), how many audiences you ticked, whether it is
+a competition, and how many seats you customised. Never your school, never the competition's name.
+
+Answers live under the `lyceumLearnerProfile` default, and the questionnaire can be run again from
+**Settings → Getting started**.
 ### It knows when you finished
 
 You do not have to tap again. A run ends by itself when the talk does: a goodbye / "any questions?" slide appears, or you say the closing words — "cảm ơn mọi người đã lắng nghe", "thank you for listening", "私の発表は以上です", whichever language you presented in — and the room then goes quiet for three seconds. The pause is required, because a speaker who says "thanks" and keeps going was not finished. Switch it off with **End the run when the talk ends**.
@@ -35,7 +53,16 @@ They ask out loud, one at a time, **in the language you presented in**. When a q
 
 When the round ends there is a second number: how the talk **defended**, judged on directness, evidence produced on demand, and whether you conceded instead of bluffing — fluency alone does not earn it. It is merged into the same report, so the Markdown export carries both halves of the rehearsal.
 
-The People button edits the room: rename them, give them another role or concern, set each one to Gentle, Standard or Brutal, remove a seat, add a sixth, restore the default five. Any agent can be given an ElevenLabs voice id; with none set, every agent gets a different local macOS voice, so a fresh install already sounds like five people.
+The People button opens the **agent studio**: five seats, and for each one a name, an icon, a role,
+a tone (Gentle, Standard, Brutal) and up to **five criteria**, chosen from three groups — what the
+agent *does* (asks questions, critiques, fact-checks, suggests slide edits, checks clarity, keeps
+time, encourages, plays devil's advocate), how it *behaves* (curious, blunt, patient, skeptical,
+warm, strict, playful, formal) and what it *watches* (evidence, structure, mechanism, plain language,
+why it matters, slides and visuals, delivery, originality). Five is a hard ceiling: the sixth chip
+greys out instead of vanishing, and the card at the bottom shows the exact sentence the agent will be
+given, so the trade is visible before you make it. A seat you have briefed yourself is never
+overwritten by the questionnaire. Any agent can be given an ElevenLabs voice id; with none set, every
+agent gets a different local macOS voice, so a fresh install already sounds like five people.
 
 ### It measures the voice, and can see the room
 
@@ -48,6 +75,15 @@ Optionally, and off by default, **stills from the camera**: one small frame ever
 The coach panel answers "how did that run go". The dashboard answers the question a student actually has before a competition: *am I getting better*. Score per run over the term, runs per day for the last three weeks, averages per drill, a streak, and the words that keep coming back across every "where it broke down" and "you never answered this" line, counted instead of remembered. Every saved run is on one shelf, openable, copyable, deletable. All of it is arithmetic over the reports already on disk — no model call, so the chart cannot change its wording or its mind between visits.
 
 It opens from the square icon in the menu bar panel or **Dashboard** in the coach panel footer, and it is the only real window in the app: titled, closable, keyboard-focusable, and it borrows the Dock icon while it is open because a menu-bar app does not normally have one.
+
+Everything that is *configuration* rather than *practice* now sits behind **one gear at the foot of
+the sidebar** — voice and camera, the room, the rules, data, appearance, getting started. The three
+tabs those used to be are gone, because they were never things you practise. **Data** counts the runs
+on disk, opens the folder, exports every saved run as one JSON file, and deletes runs older than 30 or
+90 days after asking inline (the run you are looking at stays). **Appearance** pins the app to light,
+dark or the system, and it applies to the panels, the coach card and the sheets as well, which used to
+be frozen in dark; motion can be dialled down there too.
+
 ### It only starts in a slide tool
 
 The hotkey refuses to open a run unless a presentation is in front of you: Keynote, PowerPoint, Google Slides, Canva, Gamma, Pitch, Prezi or LibreOffice Impress. That is the point — this is a rehearsal room, not a general-purpose assistant.
@@ -223,6 +259,12 @@ The coaching path reuses the same pieces with different plumbing. `LyceumSession
 
 The measured delivery is deliberately not a model opinion: `LyceumDeliveryMeter` walks the same PCM buffers the level meter already sees and computes RMS, spectral-flatness for voiced/unvoiced, a zero-crossing pitch proxy, and language-aware filler counts. `LyceumPresenceCamera` is the opt-in half: `AVCapturePhotoOutput` stills on a timer, downscaled through AppKit, held in an array and emptied at the end of the review. `LyceumInsights` then reads the saved sessions and aggregates: trend, day buckets, streak, and a keyword count over the report's gap, jargon and counter lists. The dashboard window is the only `NSWindow` here (everything else is a non-activating `NSPanel`), and it flips the activation policy to `.regular` while open, because this app is `LSUIElement`.
 
+The learner profile is the one thing that reaches every prompt. `LyceumProfileStore.contextLineForModel`
+is appended to the grading system prompt (`LyceumCoachManager.profileContextLine()`) and to the room's
+(`LyceumAudiencePrompts.panelSystemPrompt`), and `LyceumAudienceTuning.tuned(_:for:)` reshapes the
+default five the moment the questionnaire is finished — string arithmetic on the answers, not another
+model call, and it skips any seat that already has criteria of its own.
+
 ## Project structure
 
 ```
@@ -243,7 +285,11 @@ leanring-buddy/          # Swift source (yes, the typo stays)
   LyceumCoachWindowManager.swift # Floating coach panel
   LyceumDeliveryMeter.swift   # Microphone arithmetic: pace, pauses, pitch, fillers
   LyceumPresenceCamera.swift  # Optional opt-in stills, memory only
-  LyceumAudience.swift        # Roster, panel JSON, closing detector, voices
+  LyceumAudience.swift        # Roster, agent criteria, panel JSON, closing detector, voices
+  LyceumOnboarding.swift      # Five first-run questions, learner profile, profile -> roster tuning
+  LyceumAgentStudio.swift     # Studio: name, icon, tone and five criteria per agent
+  LyceumTheme.swift           # Light / dark / system for the whole app
+  LyceumDashboardSettingsView.swift # Everything behind the gear, including data and exports
   LyceumAudienceManager.swift # The Q&A round state machine
   LyceumInsights.swift        # Term-level aggregation over saved runs
   LyceumDashboardView.swift   # The dashboard UI

@@ -38,12 +38,22 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
         print("🎯 Clicky: Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")")
 
         UserDefaults.standard.register(defaults: ["NSInitialToolTipDelay": 0])
+        // Pinned before any window exists: the dashboard, both panels and the sheets all
+        // read the controller, and a late apply() would repaint a window the user is
+        // already looking at.
+        LyceumAppearanceController.shared.apply()
 
         ClickyAnalytics.configure()
         ClickyAnalytics.trackAppOpened()
 
         menuBarPanelManager = MenuBarPanelManager(companionManager: companionManager)
         companionManager.start()
+        // A first install is opened on the dashboard, not the panel, because the
+        // five onboarding questions live there: grade, audience, competition. They
+        // decide the rubric and the room, so nothing should be practised before them.
+        if !LyceumProfileStore.shared.hasCompletedOnboarding {
+            companionManager.openLyceumDashboard()
+        }
         // Auto-open the panel if the user still needs to do something:
         // either they haven't onboarded yet, or permissions were revoked.
         if !companionManager.hasCompletedOnboarding || !companionManager.allPermissionsGranted {

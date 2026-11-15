@@ -66,7 +66,7 @@ final class LyceumAudienceWindowManager {
             }
         }
         .frame(minWidth: Self.minimumWidth, maxWidth: .infinity, minHeight: Self.minimumHeight, maxHeight: .infinity)
-        .environment(\.colorScheme, .dark)
+        .lyceumColorScheme()
 
         let hostingView = NSHostingView(rootView: AnyView(roomView))
         hostingView.frame = NSRect(x: 0, y: 0, width: Self.defaultWidth, height: Self.defaultHeight)

@@ -692,7 +692,9 @@ final class LyceumCoachManager: ObservableObject {
             presenceFrameCount: presenceFrames.count
         )
 
-        let systemPrompt = LyceumCoachPrompts.systemPrompt(for: selectedMode) + topicContextLine()
+        let systemPrompt = LyceumCoachPrompts.systemPrompt(for: selectedMode)
+            + topicContextLine()
+            + profileContextLine()
 
         analysisTask = Task { [weak self] in
             guard let self else { return }
@@ -773,6 +775,16 @@ final class LyceumCoachManager: ObservableObject {
 
         picked.append(contentsOf: middleCandidates)
         return picked.sorted { $0.index < $1.index }
+    }
+
+    /// Who is actually standing in front of them. Grading a grade-9 class talk and a
+    /// city science-fair defence cannot use the same bar, and the model has no way to
+    /// know which one it is looking at unless we say so. Empty until onboarding runs,
+    /// so a returning user changes nothing about their old prompts.
+    private func profileContextLine() -> String {
+        let line = LyceumProfileStore.shared.contextLineForModel
+        guard !line.isEmpty else { return "" }
+        return "\n\n\(line)"
     }
 
     private func topicContextLine() -> String {
