@@ -65,12 +65,17 @@ final class CompanionManager: ObservableObject {
     let buddyDictationManager = BuddyDictationManager()
     let globalPushToTalkShortcutMonitor = GlobalPushToTalkShortcutMonitor()
     let overlayWindowManager = OverlayWindowManager()
+
+    /// The Lyceum practice coach. Shares the shortcut, the Worker URL and the
+    /// microphone, but runs its own capture pipeline.
+    let lyceumCoachManager = LyceumCoachManager()
     // Response text is now displayed inline on the cursor overlay via
     // streamingResponseText, so no separate response overlay manager is needed.
 
     /// Base URL for the Cloudflare Worker proxy. All API requests route
     /// through this so keys never ship in the app binary.
-    private static let workerBaseURL = "https://your-worker-name.your-subdomain.workers.dev"
+    /// Read by LyceumCoachManager as well, so the Worker URL stays in exactly one place.
+    static let workerBaseURL = "https://your-worker-name.your-subdomain.workers.dev"
 
     private lazy var claudeAPI: ClaudeAPI = {
         return ClaudeAPI(proxyURL: "\(Self.workerBaseURL)/chat", model: selectedModel)
@@ -93,6 +98,15 @@ final class CompanionManager: ObservableObject {
     private var audioPowerCancellable: AnyCancellable?
     private var accessibilityCheckTimer: Timer?
     private var pendingKeyboardShortcutStartTask: Task<Void, Never>?
+    /// Timestamp of the current ctrl+option press, used to tell a quick tap
+    /// (start/stop a practice run) from a hold (push-to-talk question).
+    private var shortcutPressedAt: Date?
+    /// True while a press was swallowed because a coaching run owns the microphone.
+    private var isHoldingShortcutForCoachSession = false
+
+    /// A press shorter than this is a tap. Dictation starts immediately either way,
+    /// so push-to-talk keeps its old zero-latency feel and a tap just undoes it.
+    private static let shortcutTapThresholdSeconds: TimeInterval = 0.25
     /// Scheduled hide for transient cursor mode — cancelled if the user
     /// speaks again before the delay elapses.
     private var transientHideTask: Task<Void, Never>?
@@ -112,6 +126,7 @@ final class CompanionManager: ObservableObject {
 
     func setSelectedModel(_ model: String) {
         selectedModel = model
+        lyceumCoachManager.applyClaudeModel(model)
         UserDefaults.standard.set(model, forKey: "selectedClaudeModel")
         claudeAPI.model = model
     }
@@ -174,6 +189,9 @@ final class CompanionManager: ObservableObject {
 
     func start() {
         refreshAllPermissions()
+        // A stored Opus preference must reach the coach too, not just push-to-talk.
+        lyceumCoachManager.applyClaudeModel(selectedModel)
+
         print("🔑 Clicky start — accessibility: \(hasAccessibilityPermission), screen: \(hasScreenRecordingPermission), mic: \(hasMicrophonePermission), screenContent: \(hasScreenContentPermission), onboarded: \(hasCompletedOnboarding)")
         startPermissionPolling()
         bindVoiceStateObservation()
@@ -288,6 +306,7 @@ final class CompanionManager: ObservableObject {
     }
 
     func stop() {
+        lyceumCoachManager.cancelSession()
         globalPushToTalkShortcutMonitor.stop()
         buddyDictationManager.cancelCurrentDictation()
         overlayWindowManager.hideOverlay()
@@ -477,6 +496,16 @@ final class CompanionManager: ObservableObject {
             // Don't register push-to-talk while the onboarding video is playing
             guard !showOnboardingVideo else { return }
 
+            shortcutPressedAt = Date()
+
+            // A live coaching run owns the microphone. Two AVAudioEngine instances
+            // cannot capture the same device, so the press is swallowed here and the
+            // release decides: a tap stops and grades the run, a hold does nothing.
+            if lyceumCoachManager.phase.isSessionLive {
+                isHoldingShortcutForCoachSession = true
+                return
+            }
+
             // Cancel any pending transient hide so the overlay stays visible
             transientHideTask?.cancel()
             transientHideTask = nil
@@ -506,7 +535,6 @@ final class CompanionManager: ObservableObject {
                     self.onboardingPromptText = ""
                 }
             }
-    
 
             ClickyAnalytics.trackPushToTalkStarted()
 
@@ -526,13 +554,39 @@ final class CompanionManager: ObservableObject {
                 )
             }
         case .released:
+            let pressDuration = shortcutPressedAt.map { Date().timeIntervalSince($0) } ?? 1
+            shortcutPressedAt = nil
+
             // Cancel the pending start task in case the user released the shortcut
             // before the async startPushToTalk had a chance to begin recording.
             // Without this, a quick press-and-release drops the release event and
             // leaves the waveform overlay stuck on screen indefinitely.
-            ClickyAnalytics.trackPushToTalkReleased()
             pendingKeyboardShortcutStartTask?.cancel()
             pendingKeyboardShortcutStartTask = nil
+
+            if isHoldingShortcutForCoachSession {
+                isHoldingShortcutForCoachSession = false
+                if pressDuration < Self.shortcutTapThresholdSeconds {
+                    // Tap while a run is live: stop recording and grade it.
+                    lyceumCoachManager.stopSessionAndReview()
+                }
+                return
+            }
+
+            if pressDuration < Self.shortcutTapThresholdSeconds {
+                // This was a tap, not a hold. Undo the dictation we opened
+                // optimistically — nothing has been transcribed yet, so nothing is
+                // lost — and use the gesture to start or stop a practice run.
+                buddyDictationManager.cancelCurrentDictation(preserveDraftText: false)
+                lyceumCoachManager.toggleSession()
+                // If the run actually started, this returns early and the cursor buddy
+                // stays up as the "you are recording" anchor. If it could not start
+                // (denied microphone, no provider), the overlay fades out normally.
+                scheduleTransientHideIfNeeded()
+                return
+            }
+
+            ClickyAnalytics.trackPushToTalkReleased()
             buddyDictationManager.stopPushToTalkFromKeyboardShortcut()
         case .none:
             break
@@ -731,6 +785,8 @@ final class CompanionManager: ObservableObject {
     /// if the user starts another push-to-talk interaction.
     private func scheduleTransientHideIfNeeded() {
         guard !isClickyCursorEnabled && isOverlayVisible else { return }
+        // Never fade the overlay out in the middle of a practice run.
+        guard !lyceumCoachManager.phase.isSessionLive else { return }
 
         transientHideTask?.cancel()
         transientHideTask = Task {
@@ -750,6 +806,9 @@ final class CompanionManager: ObservableObject {
             // Pause 1s after everything finishes, then fade out
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             guard !Task.isCancelled else { return }
+            // A practice run may have started while we were waiting. The overlay is
+            // the user's anchor during a run, so it must not fade out under them.
+            guard !lyceumCoachManager.phase.isSessionLive else { return }
             overlayWindowManager.fadeOutAndHideOverlay()
             isOverlayVisible = false
         }

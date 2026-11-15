@@ -1,4 +1,4 @@
-# Clicky - Agent Instructions
+# The Lyceum (Clicky fork) - Agent Instructions
 
 <!-- This is the single source of truth for all AI coding agents. CLAUDE.md is a symlink to this file. -->
 <!-- AGENTS.md spec: https://github.com/agentsmd/agents.md — supported by Claude Code, Cursor, Copilot, Gemini CLI, and others. -->
@@ -6,6 +6,8 @@
 ## Overview
 
 macOS menu bar companion app. Lives entirely in the macOS status bar (no dock icon, no main window). Clicking the menu bar icon opens a custom floating panel with companion voice controls. Uses push-to-talk (ctrl+option) to capture voice input, transcribes it via AssemblyAI streaming, and sends the transcript + a screenshot of the user's screen to Claude. Claude responds with text (streamed via SSE) and voice (ElevenLabs TTS). A blue cursor overlay can fly to and point at UI elements Claude references on any connected monitor.
+
+This fork is **The Lyceum**, a presentation rehearsal coach. The same ctrl+option shortcut now carries two intents: **hold it** to ask a question (the original push-to-talk flow, unchanged), **tap it** (press and release under 300ms) to start or stop a coaching run. During a run the app streams long-form audio, watches the screen for slide changes, and on stop grades the whole thing — transcript plus the slides that actually held screen time — against one of three drills: Feynman, Debate, Slide review. Output is a structured `LyceumCoachReport` (scores, gaps, per-slide rewrites, speaker notes) shown in its own floating panel, spoken aloud via TTS, saved to Application Support, and exportable as Markdown or JSON.
 
 All API keys live on a Cloudflare Worker proxy — nothing sensitive ships in the app.
 
@@ -22,6 +24,8 @@ All API keys live on a Cloudflare Worker proxy — nothing sensitive ships in th
 - **Element Pointing**: Claude embeds `[POINT:x,y:label:screenN]` tags in responses. The overlay parses these, maps coordinates to the correct monitor, and animates the blue cursor along a bezier arc to the target.
 - **Concurrency**: `@MainActor` isolation, async/await throughout
 - **Analytics**: PostHog via `ClickyAnalytics.swift`
+- **Coaching Runs**: `LyceumCoachManager` orchestrates a long-form capture (own `AVAudioEngine`) plus `LyceumSlideWatcher` (luminance-grid slide-change detection), then one multimodal Claude call with a JSON output contract
+- **Branding**: `PRODUCT_NAME = Lyceum` and `CFBundleDisplayName = The Lyceum`, but the bundle id (`com.yourcompany.leanring-buddy`), target and directory names stay Clicky's on purpose — changing the bundle id silently invalidates every TCC permission the user granted
 
 ### API Proxy (Cloudflare Worker)
 
@@ -46,16 +50,22 @@ Worker vars: `ELEVENLABS_VOICE_ID`
 
 **Shared URLSession for AssemblyAI**: A single long-lived `URLSession` is shared across all AssemblyAI streaming sessions (owned by the provider, not the session). Creating and invalidating a URLSession per session corrupts the OS connection pool and causes "Socket is not connected" errors after a few rapid reconnections.
 
-**Transient Cursor Mode**: When "Show Clicky" is off, pressing the hotkey fades in the cursor overlay for the duration of the interaction (recording → response → TTS → optional pointing), then fades it out automatically after 1 second of inactivity.
+**Transient Cursor Mode**: When "Show Clicky" is off, pressing the hotkey fades in the cursor overlay for the duration of the interaction (recording → response → TTS → optional pointing), then fades it out automatically after 1 second of inactivity. A live coaching run suppresses this fade so the user can keep seeing where they are in the talk.
+
+**Tap vs Hold on One Shortcut**: `handleShortcutTransition(.pressed)` no longer opens the microphone immediately; it waits out `shortcutTapThresholdSeconds` (300ms) and only then starts dictation. On `.released`, a press shorter than the threshold cancels that pending task and toggles a coaching run instead. The delay is what lets one key do both jobs without a second hotkey. If a coaching run already owns the microphone, holds are swallowed entirely (`isHoldingShortcutForCoachSession`) because a second `AVAudioEngine` cannot capture the same device concurrently.
+
+**Long-Form Transcription**: AssemblyAI temporary streaming tokens expire after 480s, so `LyceumSessionRecorder` rotates the provider session every 300s — it requests the segment's final transcript, commits it to a prefix, opens a new session and flushes the buffers held during the gap. The provider already composes all turns into one transcript, so stitching only needs the committed prefix.
+
+**Slide-Change Detection**: The watcher polls the watched display every 1.6s and compares a 12x8 luminance grid (top-right cell excluded, that is where the menu bar clock lives) against the last committed slide. A change must exceed 0.042 mean absolute difference and survive two polls, or exceed 0.13 outright. Byte-hashing the JPEG would fire on every hover and video tile; a coarse luminance grid does not. Only committed snapshots are kept (max 40 per run), and at most 12 — slide 1, the last slide, then the ones with the longest dwell — are sent for grading.
 
 ## Key Files
 
 | File | Lines | Purpose |
 |------|-------|---------|
 | `leanring_buddyApp.swift` | ~89 | Menu bar app entry point. Uses `@NSApplicationDelegateAdaptor` with `CompanionAppDelegate` which creates `MenuBarPanelManager` and starts `CompanionManager`. No main window — the app lives entirely in the status bar. |
-| `CompanionManager.swift` | ~1026 | Central state machine. Owns dictation, shortcut monitoring, screen capture, Claude API, ElevenLabs TTS, and overlay management. Tracks voice state (idle/listening/processing/responding), conversation history, model selection, and cursor visibility. Coordinates the full push-to-talk → screenshot → Claude → TTS → pointing pipeline. |
+| `CompanionManager.swift` | ~1079 | Central state machine. Owns dictation, shortcut monitoring, screen capture, Claude API, ElevenLabs TTS, and overlay management. Tracks voice state (idle/listening/processing/responding), conversation history, model selection, and cursor visibility. Coordinates the full push-to-talk → screenshot → Claude → TTS → pointing pipeline. |
 | `MenuBarPanelManager.swift` | ~243 | NSStatusItem + custom NSPanel lifecycle. Creates the menu bar icon, manages the floating companion panel (show/hide/position), installs click-outside-to-dismiss monitor. |
-| `CompanionPanelView.swift` | ~761 | SwiftUI panel content for the menu bar dropdown. Shows companion status, push-to-talk instructions, model picker (Sonnet/Opus), permissions UI, DM feedback button, and quit button. Dark aesthetic using `DS` design system. |
+| `CompanionPanelView.swift` | ~927 | SwiftUI panel content for the menu bar dropdown. Shows companion status, push-to-talk instructions, the Practice Run card (drill picker + start/stop), model picker (Sonnet/Opus), permissions UI, DM feedback button, and quit button. Dark aesthetic using `DS` design system. |
 | `OverlayWindow.swift` | ~881 | Full-screen transparent overlay hosting the blue cursor, response text, waveform, and spinner. Handles cursor animation, element pointing with bezier arcs, multi-monitor coordinate mapping, and fade-out transitions. |
 | `CompanionResponseOverlay.swift` | ~217 | SwiftUI view for the response text bubble and waveform displayed next to the cursor in the overlay. |
 | `CompanionScreenCaptureUtility.swift` | ~132 | Multi-monitor screenshot capture using ScreenCaptureKit. Returns labeled image data for each connected display. |
@@ -66,7 +76,7 @@ Worker vars: `ELEVENLABS_VOICE_ID`
 | `AppleSpeechTranscriptionProvider.swift` | ~147 | Local fallback transcription provider backed by Apple's Speech framework. |
 | `BuddyAudioConversionSupport.swift` | ~108 | Audio conversion helpers. Converts live mic buffers to PCM16 mono audio and builds WAV payloads for upload-based providers. |
 | `GlobalPushToTalkShortcutMonitor.swift` | ~132 | System-wide push-to-talk monitor. Owns the listen-only `CGEvent` tap and publishes press/release transitions. |
-| `ClaudeAPI.swift` | ~291 | Claude vision API client with streaming (SSE) and non-streaming modes. TLS warmup optimization, image MIME detection, conversation history support. |
+| `ClaudeAPI.swift` | ~295 | Claude vision API client with streaming (SSE) and non-streaming modes. TLS warmup optimization, image MIME detection, conversation history support. `analyzeImageStreaming` takes `maxTokens` (default 1024) because a graded rehearsal run needs a much longer answer than a spoken one-liner. |
 | `OpenAIAPI.swift` | ~142 | OpenAI GPT vision API client. |
 | `ElevenLabsTTSClient.swift` | ~81 | ElevenLabs TTS client. Sends text to the Worker proxy, plays back audio via `AVAudioPlayer`. Exposes `isPlaying` for transient cursor scheduling. |
 | `ElementLocationDetector.swift` | ~335 | Detects UI element locations in screenshots for cursor pointing. |
@@ -74,7 +84,14 @@ Worker vars: `ELEVENLABS_VOICE_ID`
 | `ClickyAnalytics.swift` | ~121 | PostHog analytics integration for usage tracking. |
 | `WindowPositionManager.swift` | ~262 | Window placement logic, Screen Recording permission flow, and accessibility permission helpers. |
 | `AppBundleConfiguration.swift` | ~28 | Runtime configuration reader for keys stored in the app bundle Info.plist. |
-| `worker/src/index.ts` | ~142 | Cloudflare Worker proxy. Three routes: `/chat` (Claude), `/tts` (ElevenLabs), `/transcribe-token` (AssemblyAI temp token). |
+| `LyceumCoachManager.swift` | ~617 | The Lyceum brain. Owns the run lifecycle (idle → preparing → recording → analysing → ready/failed), picks which slides to grade, builds the prompt, parses the verdict, speaks it, persists it, and exports it. Also holds `LyceumSessionStore` (Application Support/The Lyceum/Sessions) and the optional 75s live-nudge loop. |
+| `LyceumCoachModels.swift` | ~357 | Drill enum, session phase, slide snapshot, `LyceumCoachReport` Codable model, tolerant JSON parser (falls back to prose so a 10-minute run is never lost), and the Markdown/JSON exporters. |
+| `LyceumCoachPrompts.swift` | ~171 | System prompts for Feynman / Debate / Slide review, the tiny live-checkpoint prompt, and the transcript+context builder. Every prompt demands one JSON object in the language the user spoke. |
+| `LyceumSessionRecorder.swift` | ~327 | Long-form microphone capture on its own `AVAudioEngine`, provider session rotation every 300s, buffered hand-off across the gap, transcript prefix stitching, live audio power metering. |
+| `LyceumSlideWatcher.swift` | ~314 | Slide-change detection. Polls one latched display via ScreenCaptureKit, compares 12x8 luminance signatures with debounce, emits `LyceumSlideSnapshot`s with dwell time. |
+| `LyceumCoachPanelView.swift` | ~858 | Coach UI: drill picker, live transcript + level meter, live nudge, grading preview, verdict (scores, strengths, gaps, slide-edit cards with Copy), saved-run history, exports. |
+| `LyceumCoachWindowManager.swift` | ~142 | The floating coach `NSPanel`: non-activating, joins all Spaces, rides above full-screen apps, parks bottom-right and respects a user drag. |
+| `worker/src/index.ts` | ~142 | Cloudflare Worker proxy. Three routes: `/chat` (Claude), `/tts` (ElevenLabs), `/transcribe-token` (AssemblyAI temp token). The `/chat` route forwards the request body untouched, so `max_tokens` set by the app is respected without touching the Worker. |
 
 ## Build & Run
 

@@ -11,10 +11,10 @@
 	<key>VoiceTranscriptionProvider</key>
 	<string>assemblyai</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Clicky uses your microphone so you can talk to it</string>
+	<string>The Lyceum listens while you rehearse so it can coach your presentation.</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>Clicky needs screen recording access to see your screen and help you.</string>
+	<string>The Lyceum watches your slides while you present, so its feedback is about the deck you actually showed. It also sees what you point at when you ask a question.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Clicky uses speech recognition to transcribe your voice when you talk to it</string>
+	<string>The Lyceum transcribes your voice while a practice run is live, and when you hold the hot key to ask something.</string>
 </dict>
 </plist>

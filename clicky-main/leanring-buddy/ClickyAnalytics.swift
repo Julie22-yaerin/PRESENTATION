@@ -103,6 +103,39 @@ enum ClickyAnalytics {
         ])
     }
 
+    // MARK: - Lyceum Coaching
+
+    /// A practice run started (mic open, slide watcher running).
+    static func trackCoachSessionStarted(mode: String) {
+        PostHogSDK.shared.capture("lyceum_session_started", properties: [
+            "mode": mode
+        ])
+    }
+
+    /// A run was graded and the report is on screen.
+    static func trackCoachSessionCompleted(mode: String, durationSeconds: TimeInterval, slideCount: Int, degraded: Bool) {
+        PostHogSDK.shared.capture("lyceum_session_completed", properties: [
+            "mode": mode,
+            "duration_seconds": Int(durationSeconds),
+            "slide_count": slideCount,
+            "report_degraded": degraded
+        ])
+    }
+
+    /// A run could not be graded (no speech, API failure, permissions).
+    static func trackCoachSessionFailed(message: String) {
+        PostHogSDK.shared.capture("lyceum_session_failed", properties: [
+            "error": message
+        ])
+    }
+
+    /// The user exported a report to Markdown or JSON.
+    static func trackCoachReportExported(format: String) {
+        PostHogSDK.shared.capture("lyceum_report_exported", properties: [
+            "format": format
+        ])
+    }
+
     // MARK: - Errors
 
     /// An error occurred during the AI response pipeline.

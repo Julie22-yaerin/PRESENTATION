@@ -144,7 +144,10 @@ final class MenuBarPanelManager: NSObject {
     }
 
     private func createPanel() {
-        let companionPanelView = CompanionPanelView(companionManager: companionManager)
+        let companionPanelView = CompanionPanelView(
+            companionManager: companionManager,
+            coachManager: companionManager.lyceumCoachManager
+        )
             .frame(width: panelWidth)
 
         let hostingView = NSHostingView(rootView: companionPanelView)

@@ -1,3 +1,21 @@
+## The Lyceum
+
+The Lyceum is this repo turned into a rehearsal coach. Same engine, same hotkey, one new idea: **tap** the hotkey instead of holding it, and the app watches your screen and listens to you present, then grades the run.
+
+Tap `Control + Option` to start a run. Talk through your deck like you would in the room — slides change are detected automatically. Tap it again to stop. A few seconds later you get a verdict: scores, what landed, where it broke, and per-slide edits you can copy straight back into Keynote or PowerPoint. Export the whole thing as Markdown or JSON.
+
+Three drills, picked in the panel:
+
+- **Feynman** — teach a concept out loud. It flags the jargon you used without defining, the mechanism you hand-waved past, and the exact step where your chain breaks.
+- **Debate** — argue a position under time pressure. It reconstructs your case, lists the objections you never answered, and scores structure, evidence, delivery and rebuttal.
+- **Slide review** — present the deck. It reads density, checks whether what you *said* matches what's *on* the slide, and rewrites bullets plus speaker notes for each one.
+
+Holding `Control + Option` still does the original thing: push-to-talk, screenshot, question, answer. Nothing was taken away.
+
+Built on [Clicky](https://github.com/farzaa/clicky) by [@farzatv](https://x.com/FarzaTV), MIT licensed. The product name changed; the original code, license and author notes below stay exactly as they were.
+
+---
+
 ## Get HeyClicky for Mac and Windows
 
 The official app is **[HeyClicky](https://www.heyclicky.com/)**, an AI buddy for Mac and Windows, made by me and the team.
@@ -135,32 +153,43 @@ In Xcode:
 2. Set your signing team under Signing & Capabilities
 3. Hit **Cmd + R** to build and run
 
-The app will appear in your menu bar (not the dock). Click the icon to open the panel, grant the permissions it asks for, and you're good.
+The app will appear in your menu bar (not the dock). Click the icon to open the panel, grant the permissions it asks for, and you're good. The product is `Lyceum.app` but it keeps the original bundle id `com.yourcompany.leanring-buddy` — deliberately, because changing it would silently reset every TCC permission you already granted.
 
 ### Permissions the app needs
 
-- **Microphone** — for push-to-talk voice capture
-- **Accessibility** — for the global keyboard shortcut (Control + Option)
-- **Screen Recording** — for taking screenshots when you use the hotkey
+- **Microphone** — push-to-talk, plus continuous capture while a practice run is live
+- **Accessibility** — for the global keyboard shortcut (Control + Option: tap = run, hold = ask)
+- **Screen Recording** — screenshots on the hotkey, plus a 1.6s slide-change watcher while a run is live
 - **Screen Content** — for ScreenCaptureKit access
+
+The slide watcher only stores a snapshot when the screen actually settles on something new, so a 10-minute run costs a handful of images, not 400.
 
 ## Architecture
 
 If you want the full technical breakdown, read `CLAUDE.md`. But here's the short version:
 
-**Menu bar app** (no dock icon) with two `NSPanel` windows — one for the control panel dropdown, one for the full-screen transparent cursor overlay. Push-to-talk streams audio over a websocket to AssemblyAI, sends the transcript + screenshot to Claude via streaming SSE, and plays the response through ElevenLabs TTS. Claude can embed `[POINT:x,y:label:screenN]` tags in its responses to make the cursor fly to specific UI elements across multiple monitors. All three APIs are proxied through a Cloudflare Worker.
+**Menu bar app** (no dock icon) with three `NSPanel` windows — the control panel dropdown, the full-screen transparent cursor overlay, and the Lyceum coach panel that parks bottom-right while you present. Push-to-talk streams audio over a websocket to AssemblyAI, sends the transcript + screenshot to Claude via streaming SSE, and plays the response through ElevenLabs TTS. Claude can embed `[POINT:x,y:label:screenN]` tags in its responses to make the cursor fly to specific UI elements across multiple monitors. All three APIs are proxied through a Cloudflare Worker.
+
+The coaching path reuses the same pieces with different plumbing. `LyceumSessionRecorder` owns a second `AVAudioEngine` for the long run and rotates the AssemblyAI session every five minutes, because a temporary streaming token dies at 480 seconds — the transcript from each segment is stitched into one text. `LyceumSlideWatcher` squashes each frame to a 12x8 luminance grid and commits a slide when that grid stays different for two polls, so the menu bar clock and hover states do not count as slides. At stop, the transcript plus up to 12 of the slides that held the most screen time go into one Claude call with a JSON output contract; the verdict is parsed into `LyceumCoachReport`, saved under `Application Support/The Lyceum/Sessions`, and the two-sentence `spokenFeedback` is read aloud.
 
 ## Project structure
 
 ```
 leanring-buddy/          # Swift source (yes, the typo stays)
-  CompanionManager.swift    # Central state machine
+  CompanionManager.swift    # Central state machine, tap vs hold detection
   CompanionPanelView.swift  # Menu bar panel UI
   ClaudeAPI.swift           # Claude streaming client
   ElevenLabsTTSClient.swift # Text-to-speech playback
   OverlayWindow.swift       # Blue cursor overlay
   AssemblyAI*.swift         # Real-time transcription
   BuddyDictation*.swift     # Push-to-talk pipeline
+  LyceumCoachModels.swift     # Drills, report model, JSON parser, exporters
+  LyceumCoachPrompts.swift  # System prompts for the three drills
+  LyceumSessionRecorder.swift # Long-form mic capture with token rotation
+  LyceumSlideWatcher.swift  # Slide-change detection while presenting
+  LyceumCoachManager.swift  # Runs the session, grades it, saves it
+  LyceumCoachPanelView.swift # Coach UI: live run + verdict
+  LyceumCoachWindowManager.swift # Floating coach panel
 worker/                  # Cloudflare Worker proxy
   src/index.ts              # Three routes: /chat, /tts, /transcribe-token
 CLAUDE.md                # Full architecture doc (agents read this)

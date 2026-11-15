@@ -96,6 +96,9 @@ class ClaudeAPI {
     }
 
     /// Send a vision request to Claude with streaming.
+    ///
+    /// `maxTokens` is a parameter because a graded rehearsal run needs a far longer
+    /// answer than a spoken one-liner, while the push-to-talk path should stay cheap.
     /// Calls `onTextChunk` on the main actor each time new text arrives so the UI updates progressively.
     /// Returns the full accumulated text and total duration when the stream completes.
     func analyzeImageStreaming(
@@ -103,6 +106,7 @@ class ClaudeAPI {
         systemPrompt: String,
         conversationHistory: [(userPlaceholder: String, assistantResponse: String)] = [],
         userPrompt: String,
+        maxTokens: Int = 1024,
         onTextChunk: @MainActor @Sendable (String) -> Void
     ) async throws -> (text: String, duration: TimeInterval) {
         let startTime = Date()
@@ -141,7 +145,7 @@ class ClaudeAPI {
 
         let body: [String: Any] = [
             "model": model,
-            "max_tokens": 1024,
+            "max_tokens": maxTokens,
             "stream": true,
             "system": systemPrompt,
             "messages": messages

@@ -12,6 +12,7 @@ import SwiftUI
 
 struct CompanionPanelView: View {
     @ObservedObject var companionManager: CompanionManager
+    @ObservedObject var coachManager: LyceumCoachManager
     @State private var emailInput: String = ""
 
     var body: some View {
@@ -62,6 +63,14 @@ struct CompanionPanelView: View {
                 Spacer()
                     .frame(height: 16)
 
+                lyceumCoachSection
+                    .padding(.horizontal, 16)
+            }
+
+            if companionManager.hasCompletedOnboarding && companionManager.allPermissionsGranted {
+                Spacer()
+                    .frame(height: 16)
+
                 dmFarzaButton
                     .padding(.horizontal, 16)
             }
@@ -92,7 +101,7 @@ struct CompanionPanelView: View {
                     .frame(width: 8, height: 8)
                     .shadow(color: statusDotColor.opacity(0.6), radius: 4)
 
-                Text("Clicky")
+                Text("The Lyceum")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(DS.Colors.textPrimary)
             }
@@ -127,7 +136,7 @@ struct CompanionPanelView: View {
     @ViewBuilder
     private var permissionsCopySection: some View {
         if companionManager.hasCompletedOnboarding && companionManager.allPermissionsGranted {
-            Text("Hold Control+Option to talk.")
+            Text("Hold Control+Option to ask · tap it to run a drill.")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(DS.Colors.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -142,7 +151,7 @@ struct CompanionPanelView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } else if companionManager.allPermissionsGranted {
-            Text("You're all set. Hit Start to meet Clicky.")
+            Text("You're all set. Hit Start to meet your coach.")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(DS.Colors.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -153,7 +162,7 @@ struct CompanionPanelView: View {
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(DS.Colors.textSecondary)
 
-                Text("Some permissions were revoked. Grant all four below to keep using Clicky.")
+                Text("Some permissions were revoked. Grant all four below to keep using The Lyceum.")
                     .font(.system(size: 11))
                     .foregroundColor(DS.Colors.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -161,16 +170,16 @@ struct CompanionPanelView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Hi, I'm Farza. This is Clicky.")
+                Text("This is The Lyceum, built on Clicky.")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(DS.Colors.textSecondary)
 
-                Text("A side project I made for fun to help me learn stuff as I use my computer.")
+                Text("It listens while you present, watches the slides you actually show, and tells you what to fix.")
                     .font(.system(size: 11))
                     .foregroundColor(DS.Colors.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text("Nothing runs in the background. Clicky will only take a screenshot when you press the hot key. So, you can give that permission in peace. If you are still sus, eh, I can't do much there champ.")
+                Text("Nothing runs in the background. It only captures the screen and microphone while you press the hot key or a run is live. So, you can give those permissions in peace.")
                     .font(.system(size: 11))
                     .foregroundColor(Color(red: 0.9, green: 0.4, blue: 0.4))
                     .fixedSize(horizontal: false, vertical: true)
@@ -555,7 +564,7 @@ struct CompanionPanelView: View {
                     .foregroundColor(DS.Colors.textTertiary)
                     .frame(width: 16)
 
-                Text("Show Clicky")
+                Text("Show the cursor buddy")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(DS.Colors.textSecondary)
             }
@@ -641,6 +650,154 @@ struct CompanionPanelView: View {
         .pointerCursor()
     }
 
+    // MARK: - Lyceum Coach
+
+    /// Compact entry point into the coaching flow. The full experience lives in its
+    /// own panel; this row only has to get the user into (or out of) a run.
+    private var lyceumCoachSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "building.columns")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(DS.Colors.blue400)
+                    .frame(width: 16)
+
+                Text("Practice run")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(DS.Colors.textPrimary)
+
+                Spacer()
+
+                Text(coachStatusLabel)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(coachStatusColor)
+            }
+
+            Text("Tap the hot key to start. Tap again to stop and get the verdict on your slides.")
+                .font(.system(size: 11))
+                .foregroundColor(DS.Colors.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 6) {
+                ForEach(LyceumCoachMode.allCases) { coachMode in
+                    Button(action: {
+                        coachManager.selectedMode = coachMode
+                    }) {
+                        Text(coachMode.displayName)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(coachManager.selectedMode == coachMode ? DS.Colors.textPrimary : DS.Colors.textTertiary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                    .fill(coachManager.selectedMode == coachMode ? Color.white.opacity(0.1) : Color.clear)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .pointerCursor()
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.white.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(DS.Colors.borderSubtle, lineWidth: 0.5)
+            )
+
+            Button(action: {
+                coachManager.toggleSession()
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: coachPrimarySymbol)
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(coachPrimaryTitle)
+                        .font(.system(size: 12, weight: .semibold))
+                    Spacer()
+                    Text(coachSecondaryHint)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(DS.Colors.textTertiary)
+                }
+                .foregroundColor(DS.Colors.textOnAccent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                        .fill(DS.Colors.accent)
+                )
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+
+            if coachManager.latestReport != nil {
+                Button(action: {
+                    coachManager.openCoachPanel()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.text")
+                            .font(.system(size: 10))
+                        Text("Read the last verdict")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(DS.Colors.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .pointerCursor()
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                .stroke(DS.Colors.borderSubtle, lineWidth: 0.5)
+        )
+    }
+
+    private var coachStatusLabel: String {
+        switch coachManager.phase {
+        case .idle: return "ready"
+        case .preparing: return "opening mic"
+        case .recording: return "\(coachManager.slideCount) slides"
+        case .analysing: return "grading"
+        case .ready: return "report ready"
+        case .failed: return "failed"
+        }
+    }
+
+    private var coachStatusColor: Color {
+        switch coachManager.phase {
+        case .idle: return DS.Colors.textTertiary
+        case .preparing, .analysing: return DS.Colors.blue400
+        case .recording: return DS.Colors.destructiveText
+        case .ready: return DS.Colors.success
+        case .failed: return DS.Colors.destructiveText
+        }
+    }
+
+    private var coachPrimarySymbol: String {
+        switch coachManager.phase {
+        case .recording, .preparing: return "stop.fill"
+        case .analysing: return "hourglass"
+        default: return "record.circle"
+        }
+    }
+
+    private var coachPrimaryTitle: String {
+        switch coachManager.phase {
+        case .recording, .preparing: return "Stop & grade"
+        case .analysing: return "Grading…"
+        default: return "Start \(coachManager.selectedMode.displayName)"
+        }
+    }
+
+    private var coachSecondaryHint: String {
+        coachManager.phase.isSessionLive ? "hot key works too" : "ctrl+option tap"
+    }
+
     // MARK: - DM Farza Button
 
     private var dmFarzaButton: some View {
@@ -688,7 +845,7 @@ struct CompanionPanelView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "power")
                         .font(.system(size: 11, weight: .medium))
-                    Text("Quit Clicky")
+                    Text("Quit The Lyceum")
                         .font(.system(size: 12, weight: .medium))
                 }
                 .foregroundColor(DS.Colors.textTertiary)
@@ -726,6 +883,9 @@ struct CompanionPanelView: View {
     }
 
     private var statusDotColor: Color {
+        if coachManager.phase.isSessionLive {
+            return DS.Colors.destructiveText
+        }
         if !companionManager.isOverlayVisible {
             return DS.Colors.textTertiary
         }
@@ -740,6 +900,12 @@ struct CompanionPanelView: View {
     }
 
     private var statusText: String {
+        if coachManager.phase == .recording {
+            return "Rehearsing"
+        }
+        if coachManager.phase == .analysing {
+            return "Grading"
+        }
         if !companionManager.hasCompletedOnboarding || !companionManager.allPermissionsGranted {
             return "Setup"
         }
