@@ -148,8 +148,35 @@ final class LyceumAudienceManager: ObservableObject {
     private static let captionsDefaultsKey = "lyceumPanelCaptions"
     private static let panelEnabledDefaultsKey = "lyceumPanelEnabled"
     private static let skipUnansweredDefaultsKey = "lyceumPanelSkipsUnanswered"
+    private static let maximumQuestionsDefaultsKey = "lyceumPanelMaximumQuestions"
+    private static let unansweredTimeoutDefaultsKey = "lyceumPanelUnansweredTimeout"
+    /// Frequency and patience as user-settable numbers instead of constants: a
+    /// fifteen-year-old who has never been asked a question on purpose cannot start
+    /// with five hostile ones, and a defence practice wants all of them. The
+    /// dashboard exposes both, which is the onboarding dial the user asked to keep
+    /// for later.
+    @Published var maximumQuestions: Int {
+        didSet {
+            let clamped = max(1, min(LyceumAudienceRoster.maximumMembers, maximumQuestions))
+            if clamped != maximumQuestions {
+                maximumQuestions = clamped
+                return
+            }
+            UserDefaults.standard.set(maximumQuestions, forKey: Self.maximumQuestionsDefaultsKey)
+        }
+    }
+
     /// How long the room waits on a silent presenter before calling on the next hand.
-    private static let unansweredTimeoutSeconds: TimeInterval = 45
+    @Published var unansweredTimeoutSeconds: TimeInterval {
+        didSet {
+            let clamped = max(15, min(180, unansweredTimeoutSeconds))
+            if clamped != unansweredTimeoutSeconds {
+                unansweredTimeoutSeconds = clamped
+                return
+            }
+            UserDefaults.standard.set(unansweredTimeoutSeconds, forKey: Self.unansweredTimeoutDefaultsKey)
+        }
+    }
     private static let panelMaxTokens = 1200
     private static let reactionMaxTokens = 220
     private static let defenseMaxTokens = 220
@@ -165,6 +192,8 @@ final class LyceumAudienceManager: ObservableObject {
         self.isPanelEnabled = UserDefaults.standard.object(forKey: Self.panelEnabledDefaultsKey) as? Bool ?? true
         self.skipsUnansweredPrompts = UserDefaults.standard.bool(forKey: Self.skipUnansweredDefaultsKey)
         self.members = LyceumAudienceRoster.load()
+        self.maximumQuestions = UserDefaults.standard.object(forKey: Self.maximumQuestionsDefaultsKey) as? Int ?? 3
+        self.unansweredTimeoutSeconds = UserDefaults.standard.object(forKey: Self.unansweredTimeoutDefaultsKey) as? Double ?? 45
     }
 
     private var passTask: Task<Void, Never>?
@@ -175,7 +204,7 @@ final class LyceumAudienceManager: ObservableObject {
 
         passTask = Task { [weak self] in
             guard let self else { return }
-            try? await Task.sleep(nanoseconds: UInt64(Self.unansweredTimeoutSeconds * 1_000_000_000))
+            try? await Task.sleep(nanoseconds: UInt64(self.unansweredTimeoutSeconds * 1_000_000_000))
             guard !Task.isCancelled else { return }
             guard self.status == .awaitingUserAnswer else { return }
             print("🏛️ Lyceum panel: nobody answered, calling on the next hand")
@@ -269,9 +298,10 @@ final class LyceumAudienceManager: ObservableObject {
                     return
                 }
 
-                self.questions = parsedPanel.questions
+                let limitedQuestions = self.applyQuestionLimit(to: parsedPanel.questions)
                 self.spokenLanguageCode = parsedPanel.spokenLanguageCode ?? self.spokenLanguageCode
-                ClickyAnalytics.trackLyceumPanelConvened(questionCount: parsedPanel.questions.count)
+                self.questions = limitedQuestions
+                ClickyAnalytics.trackLyceumPanelConvened(questionCount: limitedQuestions.count)
                 self.askCurrentQuestion()
             } catch {
                 guard !Task.isCancelled else { return }
@@ -279,6 +309,19 @@ final class LyceumAudienceManager: ObservableObject {
                 self.errorMessage = "the panel could not convene: \(error.localizedDescription)"
             }
         }
+    }
+
+    /// The frequency dial. A short class rehearsal should not face five questions,
+    /// and simply taking the first N would drop the harshest voice in the room, so
+    /// the limit keeps the kind opening and always ends on whoever was worst.
+    private func applyQuestionLimit(to questions: [LyceumPanelQuestion]) -> [LyceumPanelQuestion] {
+        let limit = max(1, min(questions.count, maximumQuestions))
+        guard questions.count > limit else { return questions }
+        guard limit > 1 else { return [questions[questions.count - 1]] }
+
+        var picked = Array(questions.prefix(limit - 1))
+        picked.append(questions[questions.count - 1])
+        return picked
     }
 
     // MARK: - One agent's turn

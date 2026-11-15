@@ -27,6 +27,10 @@ extension Notification.Name {
     /// Posted by The Lyceum when it needs to say something briefly over the cursor
     /// overlay (a refused start, an automatic end). The object is the message string.
     static let lyceumNeedsAttention = Notification.Name("lyceumNeedsAttention")
+    /// Posted when something wants the dashboard window opened. The dashboard needs
+    /// CompanionManager, which owns the coach, so the request travels by notification
+    /// rather than by another reference held sideways.
+    static let lyceumOpenDashboard = Notification.Name("lyceumOpenDashboard")
 }
 
 // MARK: - What counts as a slide tool
@@ -89,6 +93,10 @@ struct LyceumFrontmostApp: Equatable {
     let isBrowser: Bool
 
     static let nothing = LyceumFrontmostApp(bundleID: nil, localizedName: "", windowTitle: "", isBrowser: false)
+
+    /// True when nothing has been read yet, so the panel and the dashboard can
+    /// disable "Allow this app" instead of letting a user whitelist an empty fact.
+    var isNothing: Bool { localizedName.isEmpty && windowTitle.isEmpty && bundleID == nil }
 
     /// One line for the panel: "Canva · Quarterly review".
     var shortDescription: String {

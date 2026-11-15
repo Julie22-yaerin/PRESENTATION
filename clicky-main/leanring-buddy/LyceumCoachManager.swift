@@ -82,10 +82,60 @@ final class LyceumCoachManager: ObservableObject {
         }
     }
 
+    /// Turn the microphone numbers on. They cost nothing — the audio was already in
+    /// memory — and they are what stops voice feedback from being a guess.
+    @Published var measuresDelivery: Bool {
+        didSet {
+            UserDefaults.standard.set(measuresDelivery, forKey: Self.measuresDeliveryDefaultsKey)
+            ClickyAnalytics.trackLyceumDeliverySettings(
+                measuresDelivery: measuresDelivery,
+                cameraStills: isPresenceCameraEnabled
+            )
+        }
+    }
+
+    /// Opt-in and off by default, and explained honestly wherever it appears: stills
+    /// of the presenter's own face, held in memory for one review and then dropped.
+    @Published var isPresenceCameraEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(isPresenceCameraEnabled, forKey: Self.presenceCameraDefaultsKey)
+            ClickyAnalytics.trackLyceumDeliverySettings(
+                measuresDelivery: measuresDelivery,
+                cameraStills: isPresenceCameraEnabled
+            )
+            if !isPresenceCameraEnabled {
+                presenceCamera.discardFrames()
+                pendingPresenceFrames = []
+                presenceFrameCount = 0
+            }
+        }
+    }
+
+    /// Seconds between camera stills.
+    @Published var cameraIntervalSeconds: TimeInterval {
+        didSet {
+            let clamped = max(LyceumPresenceCamera.minimumIntervalSeconds,
+                              min(LyceumPresenceCamera.maximumIntervalSeconds, cameraIntervalSeconds))
+            if clamped != cameraIntervalSeconds {
+                cameraIntervalSeconds = clamped
+                return
+            }
+            UserDefaults.standard.set(cameraIntervalSeconds, forKey: Self.cameraIntervalDefaultsKey)
+            presenceCamera.intervalSeconds = cameraIntervalSeconds
+        }
+    }
+
+    /// How many stills the last run collected. Never the images themselves.
+    @Published private(set) var presenceFrameCount: Int = 0
+    /// The measured numbers for the run that just finished, for the panel and the
+    /// dashboard, before any model has been asked anything.
+    @Published private(set) var lastDeliveryStats: LyceumDeliveryStats?
+
     // MARK: - Dependencies
 
     private let recorder = LyceumSessionRecorder()
     private let slideWatcher = LyceumSlideWatcher()
+    private let presenceCamera = LyceumPresenceCamera()
     private let coachWindowManager = LyceumCoachWindowManager()
     private let audienceWindowManager = LyceumAudienceWindowManager()
     let gate = LyceumAppGate()
@@ -111,11 +161,17 @@ final class LyceumCoachManager: ObservableObject {
     private var runStartedAt: Date?
     private var runTranscript = ""
     private var runSlideSnapshots: [LyceumSlideSnapshot] = []
+    /// Handed over by stopSessionAndReview and consumed by reviewRun, because the
+    /// stills have to leave memory as soon as the grade is done with them.
+    private var pendingPresenceFrames: [LyceumPresenceFrame] = []
 
     private static let modeDefaultsKey = "lyceumCoachMode"
     private static let topicDefaultsKey = "lyceumSessionTopic"
     private static let liveNudgesDefaultsKey = "lyceumLiveNudgesEnabled"
     private static let closingSignalsDefaultsKey = "lyceumMonitorsClosingSignals"
+    private static let measuresDeliveryDefaultsKey = "lyceumMeasuresDelivery"
+    private static let presenceCameraDefaultsKey = "lyceumPresenceCameraEnabled"
+    private static let cameraIntervalDefaultsKey = "lyceumCameraIntervalSeconds"
     /// A closing phrase only counts if the room stays quiet this long afterwards —
     /// a speaker who says "thanks" and keeps going was not finished.
     private static let closingWordsSettleSeconds: TimeInterval = LyceumClosingDetector.silenceGraceSeconds
@@ -138,6 +194,12 @@ final class LyceumCoachManager: ObservableObject {
         self.sessionTopic = UserDefaults.standard.string(forKey: Self.topicDefaultsKey) ?? ""
         self.areLiveNudgesEnabled = UserDefaults.standard.bool(forKey: Self.liveNudgesDefaultsKey)
         self.monitorsClosingSignals = UserDefaults.standard.object(forKey: Self.closingSignalsDefaultsKey) as? Bool ?? true
+        self.measuresDelivery = UserDefaults.standard.object(forKey: Self.measuresDeliveryDefaultsKey) as? Bool ?? true
+        // Off unless a student asks for it. A camera that films a child by default is
+        // not a feature, it is a problem for somebody else to explain later.
+        self.isPresenceCameraEnabled = UserDefaults.standard.object(forKey: Self.presenceCameraDefaultsKey) as? Bool ?? false
+        self.cameraIntervalSeconds = UserDefaults.standard.object(forKey: Self.cameraIntervalDefaultsKey) as? Double ?? LyceumPresenceCamera.defaultIntervalSeconds
+        presenceCamera.intervalSeconds = cameraIntervalSeconds
 
         // LyceumCoachManager is a root class (ObservableObject, not NSObject), so
         // there is no super.init() to call here.
@@ -227,6 +289,23 @@ final class LyceumCoachManager: ObservableObject {
 
             phase = .recording
             startCheckpointLoopIfNeeded()
+            await self.startPresenceCameraIfNeeded()
+        }
+    }
+
+    /// Starts the stills if the user switched the camera on. Failing here is
+    /// deliberately non-fatal: a denied camera must never stop a rehearsal that was
+    /// going well, but it has to be visible in the panel afterwards.
+    private func startPresenceCameraIfNeeded() async {
+        guard isPresenceCameraEnabled else {
+            presenceFrameCount = 0
+            return
+        }
+        presenceFrameCount = 0
+        pendingPresenceFrames = []
+        let started = await presenceCamera.startRun()
+        if !started {
+            lastErrorMessage = presenceCamera.lastErrorMessage ?? "the camera could not start — presence notes will be voice only"
         }
     }
 
@@ -252,6 +331,8 @@ final class LyceumCoachManager: ObservableObject {
             elapsedSeconds = runStartedAt.map { Date().timeIntervalSince($0) } ?? elapsedSeconds
             liveTranscript = finalTranscript
             slideCount = runSlideSnapshots.count
+            self.pendingPresenceFrames = self.presenceCamera.takeFramesForReview()
+            self.presenceFrameCount = self.pendingPresenceFrames.count
 
             if finalTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 finishWithFailure("the run recorded no speech. check the microphone in System Settings → Privacy & Security → Microphone.")
@@ -264,6 +345,11 @@ final class LyceumCoachManager: ObservableObject {
 
     /// Abandons the run without grading it.
     func cancelSession() {
+        // Nothing was sent anywhere and nothing is on disk, but the stills still go
+        // the moment a rehearsal is abandoned.
+        presenceCamera.discardFrames()
+        pendingPresenceFrames = []
+        presenceFrameCount = 0
         stopClosingWatch()
         panel.leave()
         audienceWindowManager.hide()
@@ -280,6 +366,32 @@ final class LyceumCoachManager: ObservableObject {
 
     /// Keeps the coach on the same model the user picked for push-to-talk, without
     /// the two managers holding each other.
+    /// Everything on disk, for the dashboard. The coach panel only needs the last
+    /// few runs; a term of practice is the whole history.
+    func loadAllSavedSessions() -> [LyceumSavedSession] {
+        LyceumSessionStore.loadRecent(limit: LyceumSessionStore.maximumSessionsOnDisk)
+    }
+
+    func deleteSavedSession(_ savedSession: LyceumSavedSession) {
+        LyceumSessionStore.delete(savedSession.sessionID)
+        reloadRecentSessions()
+        if latestSavedSession?.sessionID == savedSession.sessionID {
+            latestSavedSession = recentSessions.first
+            latestReport = recentSessions.first?.report
+        }
+    }
+
+    func reloadRecentSessions() {
+        recentSessions = LyceumSessionStore.loadRecent(limit: 8)
+    }
+
+    /// The dashboard's own way back into a run it has just opened.
+    func focusSavedSession(_ savedSession: LyceumSavedSession) {
+        latestSavedSession = savedSession
+        latestReport = savedSession.report
+        phase = .ready
+    }
+
     func applyClaudeModel(_ modelID: String) {
         claudeAPI.model = modelID
     }
@@ -552,16 +664,32 @@ final class LyceumCoachManager: ObservableObject {
         analysisTask?.cancel()
 
         let selectedSnapshots = selectSnapshotsForReview(from: runSlideSnapshots)
-        let labeledImages = selectedSnapshots.map { snapshot in
+        var labeledImages = selectedSnapshots.map { snapshot in
             (data: snapshot.imageData, label: snapshot.modelLabel)
         }
+
+        // Presenter stills go into the same call as the slides so a gesture can be
+        // put against the sentence it happened during. Then they are dropped.
+        let presenceFrames = pendingPresenceFrames
+        pendingPresenceFrames = []
+        labeledImages.append(contentsOf: presenceFrames.map { frame in
+            (data: frame.imageData, label: frame.modelLabel)
+        })
+
+        let deliveryStats = measuresDelivery
+            ? recorder.deliverySnapshot(transcript: runTranscript, runSeconds: elapsedSeconds)
+            : nil
+        lastDeliveryStats = deliveryStats
+        presenceFrameCount = presenceFrames.count
 
         let userPrompt = LyceumCoachPrompts.runContext(
             mode: selectedMode,
             spokenDurationSeconds: elapsedSeconds,
             transcriptText: runTranscript,
             slideCount: runSlideSnapshots.count,
-            previousNudge: liveNudge
+            previousNudge: liveNudge,
+            delivery: deliveryStats,
+            presenceFrameCount: presenceFrames.count
         )
 
         let systemPrompt = LyceumCoachPrompts.systemPrompt(for: selectedMode) + topicContextLine()
@@ -591,7 +719,9 @@ final class LyceumCoachManager: ObservableObject {
                     slideCount: self.runSlideSnapshots.count,
                     transcript: self.runTranscript,
                     report: report,
-                    endedBy: self.runEndingNote
+                    endedBy: self.runEndingNote,
+                    delivery: deliveryStats,
+                    presenceFrameCount: presenceFrames.isEmpty ? nil : presenceFrames.count
                 )
 
                 LyceumSessionStore.save(savedSession)
@@ -599,6 +729,10 @@ final class LyceumCoachManager: ObservableObject {
                 self.recentSessions = LyceumSessionStore.loadRecent(limit: 8)
                 self.latestReport = report
                 self.phase = .ready
+
+                // The stills have been sent and answered for. Nothing of the
+                // presenter's face is kept after this line.
+                self.presenceCamera.discardFrames()
 
                 print("🏛️ Lyceum: graded \(self.selectedMode.displayName) run in \(String(format: "%.1f", responseDuration))s, \(report.slideSuggestionRows.count) slide edits")
                 ClickyAnalytics.trackCoachSessionCompleted(
@@ -816,7 +950,8 @@ enum LyceumLiveNudgeParser {
 // MARK: - On-disk session store
 
 enum LyceumSessionStore {
-    private static let maximumSessionsOnDisk = 50
+    /// Visible because the dashboard asks for the whole shelf, not the last few.
+    static let maximumSessionsOnDisk = 60
 
     static func sessionsDirectory() -> URL {
         let supportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first

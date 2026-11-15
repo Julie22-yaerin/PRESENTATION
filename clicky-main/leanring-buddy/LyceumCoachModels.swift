@@ -15,23 +15,27 @@ import Foundation
 
 // MARK: - Mode
 
-/// The three drills The Lyceum runs. Each one changes what the AI listens for,
-/// but the capture pipeline (mic + slide watcher) is identical.
+/// The drills The Lyceum runs. Each one changes what the AI listens for, but the
+/// capture pipeline (mic, slide watcher, optional camera) is identical.
 enum LyceumCoachMode: String, CaseIterable, Identifiable {
     /// Feynman technique: the user explains a concept as if teaching it.
     case feynman
+    /// A class or competition defence: the user explains a project to a panel that
+    /// has to score it, then answers for it.
+    case defence
     /// Argument and rhetoric: the user defends a position under pressure.
     case debate
     /// Slide critique: the emphasis is on what is on screen per slide.
     case slideReview
 
-    static let allCases: [LyceumCoachMode] = [.feynman, .debate, .slideReview]
+    static let allCases: [LyceumCoachMode] = [.feynman, .defence, .debate, .slideReview]
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
         case .feynman: return "Feynman"
+        case .defence: return "Defence"
         case .debate: return "Debate"
         case .slideReview: return "Slide review"
         }
@@ -46,12 +50,15 @@ enum LyceumCoachMode: String, CaseIterable, Identifiable {
             return "Defend a position. Scores structure, evidence and rhetorical tics."
         case .slideReview:
             return "Present the deck. Rewrites bullets and speaker notes per slide."
+        case .defence:
+            return "Explain your project to a panel, then answer for it. Scores method, evidence and claim size."
         }
     }
 
     var symbolName: String {
         switch self {
         case .feynman: return "brain.head.profile"
+        case .defence: return "checklist"
         case .debate: return "bubble.left.and.bubble.right"
         case .slideReview: return "rectangle.on.rectangle"
         }
@@ -61,6 +68,7 @@ enum LyceumCoachMode: String, CaseIterable, Identifiable {
     var sessionWord: String {
         switch self {
         case .feynman: return "explaining"
+        case .defence: return "defending a project"
         case .debate: return "arguing"
         case .slideReview: return "presenting"
         }
@@ -146,7 +154,38 @@ struct LyceumSlideSuggestion: Codable, Identifiable {
     }
 }
 
-/// Rhetoric-only observations. Present in debate sessions, absent otherwise.
+/// What the presenter looked like, measured and judged. Voice numbers come from
+/// the microphone arithmetic in LyceumDeliveryMeter; the notes come from the model
+/// reading slides, words and — only if the camera was on — stills of the presenter.
+struct LyceumPresenceNotes: Codable {
+    /// Voice: pace, loudness movement, pauses, filler words.
+    let voiceNotes: String?
+    /// Body: facing, posture, hands, movement across the run.
+    let bodyLanguageNotes: String?
+    /// Where the eyes were when the important sentence arrived.
+    let eyeContactNotes: String?
+    /// Expression and animation, described as behaviour, never as emotion.
+    let facialNotes: String?
+    /// One thing to change next rehearsal. The whole section earns its place on this.
+    let oneThingToFix: String?
+
+    var isEmpty: Bool {
+        [voiceNotes, bodyLanguageNotes, eyeContactNotes, facialNotes, oneThingToFix]
+            .allSatisfy { ($0 ?? "").isEmpty }
+    }
+
+    var rows: [(label: String, value: String)] {
+        var pairs: [(String, String)] = []
+        if let voiceNotes, !voiceNotes.isEmpty { pairs.append(("Voice", voiceNotes)) }
+        if let bodyLanguageNotes, !bodyLanguageNotes.isEmpty { pairs.append(("Body", bodyLanguageNotes)) }
+        if let eyeContactNotes, !eyeContactNotes.isEmpty { pairs.append(("Eyes", eyeContactNotes)) }
+        if let facialNotes, !facialNotes.isEmpty { pairs.append(("Face", facialNotes)) }
+        if let oneThingToFix, !oneThingToFix.isEmpty { pairs.append(("Fix one thing", oneThingToFix)) }
+        return pairs
+    }
+}
+
+/// Rhetoric-only observations. Present in debate and defence sessions, absent otherwise.
 struct LyceumRhetoricNotes: Codable {
     let crutchWords: [String]?
     let pacingNotes: String?
@@ -167,6 +206,9 @@ struct LyceumCoachReport: Codable {
     /// Debate specific: the counter-arguments the user failed to answer.
     let unansweredCounters: [String]? = nil
     let rhetoric: LyceumRhetoricNotes? = nil
+    /// Voice and body observations. Absent when the camera was off and the notes
+    /// were not asked for.
+    let presence: LyceumPresenceNotes? = nil
     let slideSuggestions: [LyceumSlideSuggestion]? = nil
     /// Two sentences written for the ear; this is what gets spoken aloud.
     let spokenFeedback: String? = nil
@@ -184,6 +226,10 @@ struct LyceumCoachReport: Codable {
     var slideSuggestionRows: [LyceumSlideSuggestion] { slideSuggestions ?? [] }
 
     var hasSlideSuggestions: Bool { !slideSuggestionRows.isEmpty }
+
+    var presenceRows: [(label: String, value: String)] { presence?.rows ?? [] }
+
+    var hasPresenceNotes: Bool { (presence?.isEmpty ?? true) == false }
 }
 
 // MARK: - Parsing
@@ -231,8 +277,10 @@ enum LyceumCoachReportParser {
 
 /// What a saved session looks like on disk. Kept separate from the report because
 /// the report is the model's output, while this is the whole recording context.
-struct LyceumSavedSession: Codable {
+struct LyceumSavedSession: Codable, Identifiable {
     let sessionID: UUID
+
+    var id: UUID { sessionID }
     let mode: String
     let startedAt: Date
     let endedAt: Date
@@ -244,6 +292,13 @@ struct LyceumSavedSession: Codable {
     var report: LyceumCoachReport
     /// How the run actually ended: a tap, a farewell slide, or heard closing words.
     var endedBy: String? = nil
+    /// Microphone arithmetic from the run: pace, silence, loudness range, pitch
+    /// movement, filler words. Stored because the dashboard charts it across weeks
+    /// without asking the model again, and because a number that can be explained is
+    /// a number a student can act on.
+    var delivery: LyceumDeliveryStats? = nil
+    /// How many camera stills the grade saw. The images themselves are never saved.
+    var presenceFrameCount: Int? = nil
 }
 
 // MARK: - Exporting
@@ -313,6 +368,32 @@ enum LyceumReportExporter {
             if let structureNotes = rhetoric.structureNotes { markdownLines.append("- Structure: \(structureNotes)") }
             if let strongestPoint = rhetoric.strongestPoint { markdownLines.append("- Strongest point: \(strongestPoint)") }
             if let weakestPoint = rhetoric.weakestPoint { markdownLines.append("- Weakest point: \(weakestPoint)") }
+            markdownLines.append("")
+        }
+
+        if report.hasPresenceNotes {
+            markdownLines.append("## Voice and presence")
+            markdownLines.append("")
+            for row in report.presenceRows {
+                markdownLines.append("- \(row.label): \(row.value)")
+            }
+            markdownLines.append("")
+        }
+
+        if let delivery = savedSession.delivery {
+            markdownLines.append("## Measured")
+            markdownLines.append("")
+            markdownLines.append("- Pace: \(Int(delivery.wordsPerMinute.rounded())) words per minute over \(delivery.wordCount) words")
+            markdownLines.append("- Speech: \(Int(delivery.voicedSeconds))s of \(Int(delivery.totalSeconds))s (\(delivery.silencePercent)% silence, longest pause \(String(format: "%.1f", delivery.longestPauseSeconds))s)")
+            markdownLines.append("- Loudness: mean \(String(format: "%.1f", delivery.meanLevelDecibels)) dBFS, range \(String(format: "%.1f", delivery.levelRangeDecibels)) dB")
+            markdownLines.append("- Pitch movement: \(Int(delivery.pitchProxyHertz.rounded())) Hz proxy, variety \(String(format: "%.2f", delivery.pitchVariety))")
+            if !delivery.fillers.isEmpty {
+                let top = delivery.fillers.prefix(6).map { "\($0.word) x\($0.count)" }.joined(separator: ", ")
+                markdownLines.append("- Filler words: \(top) (\(String(format: "%.1f", delivery.fillerPerMinute)) per minute of speech)")
+            }
+            if let count = savedSession.presenceFrameCount, count > 0 {
+                markdownLines.append("- Camera stills the grade saw: \(count), not stored")
+            }
             markdownLines.append("")
         }
 

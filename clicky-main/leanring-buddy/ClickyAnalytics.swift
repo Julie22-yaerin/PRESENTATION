@@ -173,6 +173,22 @@ enum ClickyAnalytics {
         ])
     }
 
+    /// The dashboard window was opened. It says nothing about what was in it.
+    static func trackLyceumDashboardOpened() {
+        PostHogSDK.shared.capture("lyceum_dashboard_opened", properties: [
+            "window": "practice_dashboard"
+        ])
+    }
+
+    /// A delivery dial moved. Only the two switches travel, never a number measured
+    /// from a student's voice or face.
+    static func trackLyceumDeliverySettings(measuresDelivery: Bool, cameraStills: Bool) {
+        PostHogSDK.shared.capture("lyceum_delivery_settings", properties: [
+            "measures_delivery": measuresDelivery,
+            "camera_stills": cameraStills
+        ])
+    }
+
     // MARK: - Errors
 
     /// An error occurred during the AI response pipeline.

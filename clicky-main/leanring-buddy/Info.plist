@@ -16,5 +16,7 @@
 	<string>The Lyceum watches your slides while you present, so its feedback is about the deck you actually showed. It also sees what you point at when you ask a question.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>The Lyceum transcribes your voice while a practice run is live, and when you hold the hot key to ask something.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>The Lyceum takes a few small stills of you while you rehearse, only if you switch the camera on in the dashboard. They are sent with your slides for feedback on posture and eye contact, and are never saved to disk.</string>
 </dict>
 </plist>

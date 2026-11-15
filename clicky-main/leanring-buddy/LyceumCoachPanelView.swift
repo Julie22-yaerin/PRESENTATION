@@ -197,6 +197,8 @@ struct LyceumCoachPanelView: View {
 
             roomCard
 
+            presenceCard
+
             Button(action: {
                 RunCueSound.play()
                 coachManager.startSession()
@@ -397,6 +399,155 @@ struct LyceumCoachPanelView: View {
         guard !names.isEmpty else { return "Nobody is in the room. Add a seat in the room window." }
         return names.joined(separator: " · ")
     }
+
+    /// The camera and microphone dials, kept together because they answer the same
+    /// question a nervous student asks first: what else is this thing watching?
+    private var presenceCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "waveform")
+                    .font(.system(size: 11))
+                    .foregroundColor(DS.Colors.blue400)
+                Text("Voice and presence")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(DS.Colors.textPrimary)
+                Spacer()
+            }
+
+            toggleRow(
+                title: "Measure my delivery",
+                detail: "Pace, silence, loudness range and filler words, from arithmetic on the microphone. The audio itself never leaves the run.",
+                isOn: Binding(
+                    get: { coachManager.measuresDelivery },
+                    set: { coachManager.measuresDelivery = $0 }
+                )
+            )
+
+            toggleRow(
+                title: "Stills from the camera",
+                detail: coachManager.isPresenceCameraEnabled
+                    ? "One small still every \(Int(coachManager.cameraIntervalSeconds))s, sent with your slides, then dropped. Nothing is written to disk."
+                    : "Off. Feedback about posture and eye contact needs this switched on.",
+                isOn: Binding(
+                    get: { coachManager.isPresenceCameraEnabled },
+                    set: { coachManager.isPresenceCameraEnabled = $0 }
+                )
+            )
+
+            if coachManager.isPresenceCameraEnabled {
+                HStack(spacing: 8) {
+                    Text("Still every")
+                        .font(.system(size: 10))
+                        .foregroundColor(DS.Colors.textTertiary)
+                    Slider(value: Binding(
+                        get: { coachManager.cameraIntervalSeconds },
+                        set: { coachManager.cameraIntervalSeconds = $0 }
+                    ), in: 5...60, step: 5)
+                    .controlSize(.small)
+                    .frame(width: 90)
+                    Text("\(Int(coachManager.cameraIntervalSeconds))s")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(DS.Colors.textSecondary)
+                        .frame(width: 26, alignment: .trailing)
+                }
+
+                if coachManager.presenceFrameCount > 0 {
+                    Text("\(coachManager.presenceFrameCount) stills went into the last grade. None were kept.")
+                        .font(.system(size: 10))
+                        .foregroundColor(DS.Colors.textTertiary)
+                }
+            }
+        }
+        .padding(12)
+        .background(cardBackground)
+        .overlay(cardOverlay)
+    }
+
+    /// Numbers the app measured itself, shown before anything the model believes
+    /// about them. A student has to be able to tell a measurement from an opinion.
+    private var measuredSection: some View {
+        let delivery = coachManager.latestSavedSession?.delivery
+        let reading = delivery.map { LyceumDeliveryMeter.plainReading(of: $0) } ?? []
+
+        return VStack(alignment: .leading, spacing: 8) {
+            sectionLabel("Measured, not judged")
+
+            if let delivery {
+                Text(delivery.summaryLine)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(DS.Colors.textPrimary)
+
+                ForEach(Array(reading.enumerated()), id: "\.offset") { _, line in
+                    HStack(alignment: .top, spacing: 6) {
+                        Circle()
+                            .fill(DS.Colors.textTertiary)
+                            .frame(width: 3, height: 3)
+                            .padding(.top, 5)
+                        Text(line)
+                            .font(.system(size: 11))
+                            .foregroundColor(DS.Colors.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                if !delivery.fillers.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(delivery.fillers.prefix(5)) { hit in
+                            Text("\(hit.word) x\(hit.count)")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundColor(DS.Colors.warningText)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(
+                                    RoundedRectangle(cornerRadius: DS.CornerRadius.small, style: .continuous)
+                                        .fill(DS.Colors.warning.opacity(0.12))
+                                )
+                        }
+                    }
+                }
+
+                if (coachManager.latestSavedSession?.presenceFrameCount ?? 0) == 0 {
+                    Text("No camera stills this run, so nothing was said about posture or eye contact.")
+                        .font(.system(size: 10))
+                        .foregroundColor(DS.Colors.textTertiary)
+                }
+            } else {
+                Text("Delivery measurement was switched off for this run. Turn it on above — it costs nothing.")
+                    .font(.system(size: 11))
+                    .foregroundColor(DS.Colors.textTertiary)
+            }
+        }
+        .padding(12)
+        .background(cardBackground)
+        .overlay(cardOverlay)
+    }
+
+    /// What the model saw of the presenter as a body in a room. Separate from the
+    /// scores because a note about hands is not a grade, and students hear it that way.
+    private var presenceSection: some View {
+        let rows = coachManager.latestReport?.presenceRows ?? []
+
+        return VStack(alignment: .leading, spacing: 8) {
+            sectionLabel("Voice and presence")
+
+            ForEach(Array(rows.enumerated()), id: "\.offset") { _, row in
+                HStack(alignment: .top, spacing: 8) {
+                    Text(row.label)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(DS.Colors.textTertiary)
+                        .frame(width: 84, alignment: .leading)
+                    Text(row.value)
+                        .font(.system(size: 11))
+                        .foregroundColor(row.label == "Fix one thing" ? DS.Colors.textPrimary : DS.Colors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(12)
+        .background(cardBackground)
+        .overlay(cardOverlay)
+    }
+
 
     private var emptyReportHint: some View {
         Group {
@@ -642,6 +793,14 @@ struct LyceumCoachPanelView: View {
                         scoreRowView(scoreRow)
                     }
                 }
+            }
+
+            if coachManager.latestSavedSession != nil {
+                measuredSection
+            }
+
+            if report.hasPresenceNotes {
+                presenceSection
             }
 
             if let strengths = report.strengths, !strengths.isEmpty {
@@ -919,6 +1078,10 @@ struct LyceumCoachPanelView: View {
                 }
 
                 Spacer()
+
+                footerButton(title: "Dashboard", symbol: "square.grid.2x2") {
+                    NotificationCenter.default.post(name: .lyceumOpenDashboard, object: nil)
+                }
 
                 footerButton(title: "History", symbol: "clock.arrow.circlepath") {
                     coachManager.toggleHistory()

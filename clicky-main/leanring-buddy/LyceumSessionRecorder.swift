@@ -52,6 +52,10 @@ final class LyceumSessionRecorder: NSObject, ObservableObject {
     private var rotationTask: Task<Void, Never>?
     private var runStartedAt: Date?
     private var lastPowerSampleDate = Date.distantPast
+    /// Measures the same buffers the level meter already reads. No second tap on
+    /// the audio engine, because two taps on one input node is a crash waiting to
+    /// happen, and nothing here costs a frame of capture.
+    let deliveryMeter = LyceumDeliveryMeter()
 
     override init() {
         super.init()
@@ -83,6 +87,7 @@ final class LyceumSessionRecorder: NSObject, ObservableObject {
         }
 
         transcriptText = ""
+        deliveryMeter.reset()
         committedTranscriptPrefix = ""
         currentSegmentTranscript = ""
         heldBuffersDuringRotation = []
@@ -124,6 +129,12 @@ final class LyceumSessionRecorder: NSObject, ObservableObject {
         transcriptText = finishedTranscript
         print("🏛️ Lyceum recorder: capture finished, \(finishedTranscript.count) characters")
         return finishedTranscript
+    }
+
+    /// Microphone arithmetic for the finished run. Called after finishRun so the
+    /// filler count works on the final transcript, not a mid-rotation prefix.
+    func deliverySnapshot(transcript: String, runSeconds: TimeInterval) -> LyceumDeliveryStats {
+        deliveryMeter.snapshot(transcript: transcript, runSeconds: runSeconds)
     }
 
     /// Abandons the run without waiting for a final transcript (user hit cancel).
@@ -333,6 +344,11 @@ final class LyceumSessionRecorder: NSObject, ObservableObject {
         let channelSamples = channelData[0]
         let frameCount = Int(audioBuffer.frameLength)
         guard frameCount > 0 else { return }
+        deliveryMeter.consume(
+            samples: Array(UnsafeBufferPointer(start: channelSamples, count: frameCount)),
+            sampleRate: Double(audioBuffer.format.sampleRate)
+        )
+
 
         var summedSquares: Float = 0
         for sampleIndex in 0..<frameCount {

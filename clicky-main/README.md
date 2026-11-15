@@ -4,9 +4,10 @@ The Lyceum is this repo turned into a rehearsal coach. Same engine, same hotkey,
 
 Tap `Control + Option` to start a run — only if a slide tool is in front of you. Talk through your deck like you would in the room — slides change are detected automatically. Tap it again to stop. A few seconds later you get a verdict: scores, what landed, where it broke, and per-slide edits you can copy straight back into Keynote or PowerPoint. Export the whole thing as Markdown or JSON.
 
-Three drills, picked in the panel:
+Four drills, picked in the panel:
 
 - **Feynman** — teach a concept out loud. It flags the jargon you used without defining, the mechanism you hand-waved past, and the exact step where your chain breaks.
+- **Defence** — present a project to a panel that has to score it. It judges the claim against what was actually measured, names the method step a judge would ask about first, and scores Question, Method, Evidence, Understanding, Delivery.
 - **Debate** — argue a position under time pressure. It reconstructs your case, lists the objections you never answered, and scores structure, evidence, delivery and rebuttal.
 - **Slide review** — present the deck. It reads density, checks whether what you *said* matches what's *on* the slide, and rewrites bullets plus speaker notes for each one.
 
@@ -36,6 +37,17 @@ When the round ends there is a second number: how the talk **defended**, judged 
 
 The People button edits the room: rename them, give them another role or concern, set each one to Gentle, Standard or Brutal, remove a seat, add a sixth, restore the default five. Any agent can be given an ElevenLabs voice id; with none set, every agent gets a different local macOS voice, so a fresh install already sounds like five people.
 
+### It measures the voice, and can see the room
+
+Before any model is asked anything, the app does arithmetic on the microphone it was already holding: words per minute, how much of the run was silence and where the longest pause was, how far the loudness moved and how much the pitch moved, and which filler words came back — in the language you spoke, so a Vietnamese "kiểu là" is never merged with an English "kind of". Those numbers go into the grading prompt, so the model can be held to them instead of noticing your pace in a general way. Turn it off in the panel if you would rather not see the figures; it costs nothing to leave on, because no extra audio is captured.
+
+Optionally, and off by default, **stills from the camera**: one small frame every 12 seconds (you set the interval), shrunk to 512 pixels, sent to the model together with your slides so it can say something about facing, hands, posture and where your eyes were when the important sentence arrived. They are not video. They are never written to disk, never attached to a saved session, and dropped the moment grading finishes; an abandoned run keeps nothing. It is asked for once, in System Settings, and the dashboard explains it in those words.
+
+### A dashboard for a term of practice
+
+The coach panel answers "how did that run go". The dashboard answers the question a student actually has before a competition: *am I getting better*. Score per run over the term, runs per day for the last three weeks, averages per drill, a streak, and the words that keep coming back across every "where it broke down" and "you never answered this" line, counted instead of remembered. Every saved run is on one shelf, openable, copyable, deletable. All of it is arithmetic over the reports already on disk — no model call, so the chart cannot change its wording or its mind between visits.
+
+It opens from the square icon in the menu bar panel or **Dashboard** in the coach panel footer, and it is the only real window in the app: titled, closable, keyboard-focusable, and it borrows the Dock icon while it is open because a menu-bar app does not normally have one.
 ### It only starts in a slide tool
 
 The hotkey refuses to open a run unless a presentation is in front of you: Keynote, PowerPoint, Google Slides, Canva, Gamma, Pitch, Prezi or LibreOffice Impress. That is the point — this is a rehearsal room, not a general-purpose assistant.
@@ -195,10 +207,11 @@ The app will appear in your menu bar (not the dock). Click the icon to open the 
 - **Accessibility** — for the global keyboard shortcut (Control + Option: tap = start or stop a run, hold = ask, hold while the room is waiting = answer)
 - **Screen Recording** — screenshots on the hotkey, plus a 1.6s slide-change watcher while a run is live
 - **Screen Content** — for ScreenCaptureKit access
+- **Camera** — only if you switch "Stills from the camera" on. One small still every few seconds, sent with the slides, never stored. Nothing about it runs unless you turn it on.
 
 The slide watcher only stores a snapshot when the screen actually settles on something new, so a 10-minute run costs a handful of images, not 400.
 
-The audience panel needs nothing extra. It reads the same microphone and the same screen-recording grant, and its voices come from macOS itself unless you give an agent an ElevenLabs voice id.
+The audience panel needs nothing extra. It reads the same microphone and the same screen-recording grant, and its voices come from macOS itself unless you give an agent an ElevenLabs voice id. The voice measurement needs nothing either — it works on buffers the run already had in memory.
 
 ## Architecture
 
@@ -207,6 +220,8 @@ If you want the full technical breakdown, read `CLAUDE.md`. But here's the short
 **Menu bar app** (no dock icon) with three `NSPanel` windows — the control panel dropdown, the full-screen transparent cursor overlay, and the Lyceum coach panel that parks bottom-right while you present. Push-to-talk streams audio over a websocket to AssemblyAI, sends the transcript + screenshot to Claude via streaming SSE, and plays the response through ElevenLabs TTS. Claude can embed `[POINT:x,y:label:screenN]` tags in its responses to make the cursor fly to specific UI elements across multiple monitors. All three APIs are proxied through a Cloudflare Worker.
 
 The coaching path reuses the same pieces with different plumbing. `LyceumSessionRecorder` owns a second `AVAudioEngine` for the long run and rotates the AssemblyAI session every five minutes, because a temporary streaming token dies at 480 seconds — the transcript from each segment is stitched into one text. `LyceumSlideWatcher` squashes each frame to a 12x8 luminance grid and commits a slide when that grid stays different for two polls, so the menu bar clock and hover states do not count as slides. At stop, the transcript plus up to 12 of the slides that held the most screen time go into one Claude call with a JSON output contract; the verdict is parsed into `LyceumCoachReport`, saved under `Application Support/The Lyceum/Sessions`, and the two-sentence `spokenFeedback` is read aloud.
+
+The measured delivery is deliberately not a model opinion: `LyceumDeliveryMeter` walks the same PCM buffers the level meter already sees and computes RMS, spectral-flatness for voiced/unvoiced, a zero-crossing pitch proxy, and language-aware filler counts. `LyceumPresenceCamera` is the opt-in half: `AVCapturePhotoOutput` stills on a timer, downscaled through AppKit, held in an array and emptied at the end of the review. `LyceumInsights` then reads the saved sessions and aggregates: trend, day buckets, streak, and a keyword count over the report's gap, jargon and counter lists. The dashboard window is the only `NSWindow` here (everything else is a non-activating `NSPanel`), and it flips the activation policy to `.regular` while open, because this app is `LSUIElement`.
 
 ## Project structure
 
@@ -220,12 +235,19 @@ leanring-buddy/          # Swift source (yes, the typo stays)
   AssemblyAI*.swift         # Real-time transcription
   BuddyDictation*.swift     # Push-to-talk pipeline
   LyceumCoachModels.swift     # Drills, report model, JSON parser, exporters
-  LyceumCoachPrompts.swift  # System prompts for the three drills
+  LyceumCoachPrompts.swift  # System prompts for the four drills
   LyceumSessionRecorder.swift # Long-form mic capture with token rotation
   LyceumSlideWatcher.swift  # Slide-change detection while presenting
   LyceumCoachManager.swift  # Runs the session, grades it, saves it
   LyceumCoachPanelView.swift # Coach UI: live run + verdict
   LyceumCoachWindowManager.swift # Floating coach panel
+  LyceumDeliveryMeter.swift   # Microphone arithmetic: pace, pauses, pitch, fillers
+  LyceumPresenceCamera.swift  # Optional opt-in stills, memory only
+  LyceumAudience.swift        # Roster, panel JSON, closing detector, voices
+  LyceumAudienceManager.swift # The Q&A round state machine
+  LyceumInsights.swift        # Term-level aggregation over saved runs
+  LyceumDashboardView.swift   # The dashboard UI
+  LyceumDashboardWindowManager.swift # The one real window
 worker/                  # Cloudflare Worker proxy
   src/index.ts              # Three routes: /chat, /tts, /transcribe-token
 CLAUDE.md                # Full architecture doc (agents read this)

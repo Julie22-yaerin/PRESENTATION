@@ -69,6 +69,8 @@ final class CompanionManager: ObservableObject {
     /// The Lyceum practice coach. Shares the shortcut, the Worker URL and the
     /// microphone, but runs its own capture pipeline.
     let lyceumCoachManager = LyceumCoachManager()
+    /// The one normal window in this app: a dashboard a student opens on purpose.
+    private let lyceumDashboardWindowManager = LyceumDashboardWindowManager()
     // Response text is now displayed inline on the cursor overlay via
     // streamingResponseText, so no separate response overlay manager is needed.
 
@@ -126,6 +128,29 @@ final class CompanionManager: ObservableObject {
 
     /// The Claude model used for voice responses. Persisted to UserDefaults.
     @Published var selectedModel: String = UserDefaults.standard.string(forKey: "selectedClaudeModel") ?? "claude-sonnet-4-6"
+
+    /// Opens the dashboard. Called from the menu bar panel header, the coach panel
+    /// footer, and the notification the Lyceum objects post so they do not have to
+    /// hold this class.
+    func openLyceumDashboard() {
+        ClickyAnalytics.trackLyceumDashboardOpened()
+        lyceumDashboardWindowManager.show(
+            coach: lyceumCoachManager,
+            audience: lyceumCoachManager.audience,
+            gate: lyceumCoachManager.gate,
+            companion: self
+        )
+    }
+
+    func toggleLyceumDashboard() {
+        lyceumDashboardWindowManager.toggle(
+            coach: lyceumCoachManager,
+            audience: lyceumCoachManager.audience,
+            gate: lyceumCoachManager.gate,
+            companion: self
+        )
+    }
+
 
     func setSelectedModel(_ model: String) {
         selectedModel = model
@@ -191,6 +216,16 @@ final class CompanionManager: ObservableObject {
     }
 
     func start() {
+        NotificationCenter.default.addObserver(
+            forName: .lyceumOpenDashboard,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.openLyceumDashboard()
+            }
+        }
+
         refreshAllPermissions()
         // A stored Opus preference must reach the coach too, not just push-to-talk.
         lyceumCoachManager.applyClaudeModel(selectedModel)

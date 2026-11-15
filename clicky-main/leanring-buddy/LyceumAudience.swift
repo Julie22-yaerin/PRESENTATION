@@ -36,11 +36,11 @@ enum LyceumAudienceTone: String, CaseIterable, Codable {
     var briefForModel: String {
         switch self {
         case .gentle:
-            return "Supportive. Ask the question a friend would ask, and concede what worked."
+            return "Kind and specific. Ask the thing the rest of the class is too shy to ask, and say which part finally made sense."
         case .standard:
-            return "Professional. Challenge the weakest claim you heard, without theatre."
+            return "Fair and exact. Question the weakest part of the explanation and ask for the evidence, the definition or the mechanism behind it."
         case .brutal:
-            return "Adversarial and specific. Attack the load-bearing assumption. No compliments."
+            return "Blunt, like a real judge with thirty projects today. Go straight for the load-bearing claim and do not accept the answer repeated in other words."
         }
     }
 
@@ -92,47 +92,57 @@ enum LyceumAudienceRoster {
     static let maximumMembers = 6
     static let minimumMembers = 1
 
-    /// Five distinct kinds of trouble. Together they cover the ways a real room
-    /// decides a talk was not finished: the examiner, the practitioner, the
-    /// specialist, the money, and the person watching the clock.
+    /// Five kinds of trouble, in the shape of the rooms these users actually
+    /// stand in: a class, a school assembly, or a science-fair judging panel.
+    /// The order matters as much as the roles — this is who really asks what.
+    ///
+    /// - The chair decides whether the claim was earned, which is what a rubric does.
+    /// - The subject teacher knows the concept cold and hears the wrong term or the
+    ///   hand-wave a student would never be told about by a friendly classmate.
+    /// - The outside judge is the real science-fair experience: a clever biology
+    ///   teacher in front of a physics project, who is not embarrassed to say
+    ///   "I don't understand why this matters".
+    /// - The classmate forces the plain re-explanation, which is the whole point of
+    ///   the Feynman drill.
+    /// - The timekeeper is the one thing nobody practises for and everybody fails.
     static let defaultMembers: [LyceumAudienceMember] = [
         LyceumAudienceMember(
-            id: "examiner",
+            id: "chair",
             name: "Mara Vidal",
-            role: "Committee chair",
-            persona: "Has sat through four hundred defences. Only cares about whether the claim was actually justified.",
+            role: "Judging panel chair",
+            persona: "Has scored hundreds of school projects. Only one question interests them: was the claim actually earned by what the speaker showed?",
             tone: .brutal,
             avatarSymbol: "graduationcap"
         ),
         LyceumAudienceMember(
-            id: "practitioner",
-            name: "Tom Reyes",
-            role: "Product lead",
-            persona: "Has to ship something on Monday based on this. Asks what breaks in week one.",
-            tone: .standard,
-            avatarSymbol: "wrench.and.screwdriver"
-        ),
-        LyceumAudienceMember(
-            id: "specialist",
+            id: "subjectTeacher",
             name: "Ines Okafor",
-            role: "Domain expert",
-            persona: "Knows the field better than the speaker. Notices the number that was skipped or the term that was used wrongly.",
+            role: "Subject teacher",
+            persona: "Teaches this exact topic and knows the concept better than the speaker does. Hears the misused term, the missing unit, the mechanism that was waved past.",
             tone: .standard,
             avatarSymbol: "microscope"
         ),
         LyceumAudienceMember(
-            id: "investor",
+            id: "outsideJudge",
             name: "Kenji Sato",
-            role: "Funder",
-            persona: "Ten minutes of attention. Wants the why-now, the size of the prize, and what they would have to believe.",
-            tone: .gentle,
-            avatarSymbol: "chart.line.uptrend.xyaxis"
+            role: "Judge from another subject",
+            persona: "Smart, curious, and not in this field. Not embarrassed to say they got lost, and wants to know why the result matters and what the speaker would do next.",
+            tone: .standard,
+            avatarSymbol: "eye"
         ),
         LyceumAudienceMember(
-            id: "moderator",
+            id: "classmate",
+            name: "Sam Whitfield",
+            role: "Classmate who missed the lesson",
+            persona: "Same age as the speaker, no background at all. If the explanation needed the hard words to work, they ask for it again without them.",
+            tone: .gentle,
+            avatarSymbol: "person.fill.questionmark"
+        ),
+        LyceumAudienceMember(
+            id: "timekeeper",
             name: "Priya Nair",
-            role: "Session chair",
-            persona: "Runs the room and the clock. Cuts to structure: what was the promise, was it paid off, what should the audience do next.",
+            role: "Timekeeper",
+            persona: "Runs the room and holds the clock. Cuts to shape: what was promised, was it delivered in the time, and what should be cut next time.",
             tone: .gentle,
             avatarSymbol: "clock"
         )
@@ -390,8 +400,9 @@ enum LyceumClosingDetector {
     }
 
     /// Minimum talk length before a "thank you" is allowed to end the run. Nobody
-    /// opens a rehearsal by closing it.
-    static let minimumSecondsBeforeAutoEnd: TimeInterval = 25
+    /// opens a rehearsal by closing it. Class presentations run short, so the floor
+    /// is low and the user can move it in the dashboard.
+    static let minimumSecondsBeforeAutoEnd: TimeInterval = 20
 
     /// How long the room has to stay quiet after the words land. A speaker who says
     /// "thanks" and immediately keeps going was not finished.
@@ -486,9 +497,9 @@ enum LyceumAudiencePrompts {
     /// the words, the verdict, and their own character.
     static func panelSystemPrompt(roster: [LyceumAudienceMember]) -> String {
         var lines: [String] = [
-            "You are role-playing the audience of a presentation that has just ended.",
+            "You are role-playing the room a student has just presented to: a class, a school hall, or a science-fair judging panel.",
             "The speaker finished. It is now the question round.",
-            "For EACH audience member below, write exactly one thing they say at the microphone.",
+            "For EACH person below, write exactly one thing they say at the microphone.",
             "",
             "THE PANEL:"
         ]
@@ -504,11 +515,14 @@ enum LyceumAudiencePrompts {
             "HARD RULES:",
             "1. Write in the SAME language the speaker spoke. Detect it from the transcript. Never translate into English if the talk was not in English.",
             "2. Every line must be rooted in something the speaker actually said or showed. If you cannot name it, do not ask it.",
-            "3. No summaries, no compliments used as padding, no \"great presentation, but…\". They are in a room, not writing review.",
-            "4. Each line must be answerable out loud in 20-40 seconds. One question, not three.",
+            "3. No summaries, no compliments used as padding, no \"great presentation, but…\". They are in a room, not writing a review.",
+            "4. Each line must be answerable out loud in 20-40 seconds by a student. One question, not three. No question that needs research to answer.",
             "5. Order them: kindest first, harshest last, the way a real room warms up.",
             "6. A counterargument must state the opposing position, not just doubt.",
             "7. Never invent numbers, citations or facts the speaker did not mention. Ask about what is missing instead.",
+            "8. Questions a real panel asks about a student project, in priority order: did the evidence actually show it (controls, sample size, what was measured and how), what would change your mind, what is the mechanism rather than the correlation, which term did you use without defining it, and why does this matter to anyone.",
+            "9. The classmate and the outside judge are allowed to say \"I got lost at X — say it again without those words\". That is a real question and often the best one in the room.",
+            "10. This is a student, not a defendant. Be direct about the work, never about the person. No humiliation, no sarcasm, no imagining what the teacher thinks of them.",
             "",
             "ANSWER WITH JSON ONLY, no prose, no fences:",
             "{\"language\":\"<2-letter code of the language the speaker used>\",\"panel\":[{\"memberId\":\"<one of the ids above>\",\"kind\":\"question|counterargument|clarification\",\"question\":\"<what they say, spoken style, <=45 words>\",\"rootedIn\":\"<=8 words naming the moment it came from\"}]}"
@@ -542,13 +556,15 @@ enum LyceumAudiencePrompts {
     /// The agent hears the user's answer and reacts in character, once.
     static func reactionSystemPrompt(for member: LyceumAudienceMember) -> String {
         """
-        You are \(member.name), \(member.role), in a presentation Q&A. \(member.persona)
+        You are \(member.name), \(member.role), in the question round after a student's presentation. \(member.persona)
         \(member.tone.briefForModel)
-        You asked one question. The speaker has now answered it out loud.
+        You asked one question. The student has now answered it out loud.
         Reply in character, in the SAME language the speaker is using.
         Two sentences maximum for the reply. It must be sayable out loud — no lists, no markdown.
-        Decide honestly whether the answer held up.
-        Only add a followUp when the answer was weak or dodged, and make it one short question.
+        Decide honestly whether the answer held up: did they answer the question that was asked, and did they give a reason, an example or a number?
+        "I don't know, I would check X" is a good answer and counts as held. Say so plainly, because that is the habit that saves them in a real panel.
+        A confident repeat of the slide is not an answer. Only add a followUp when the answer was weak or dodged, and make it one short question.
+        Never mock, never comment on the person, only on the work.
         ANSWER WITH JSON ONLY: {"reply":"...","verdict":"held|weak|dodged","followUp":"... or empty string"}
         """
     }
@@ -563,11 +579,14 @@ enum LyceumAudiencePrompts {
 
     /// After the round, one number for how the user defended the talk.
     static let defenseSystemPrompt = """
-    You judge how well a presenter defended their talk in the Q&A round.
+    You judge how well a student defended their own work in the question round.
     Read the question / answer pairs. Score only what they did under questioning:
-    directness, evidence brought on demand, honesty about what they do not know,
-    and whether they conceded instead of bluffing.
+    directness (did they answer the question that was asked), evidence produced on
+    demand, honesty about what they do not know, and whether they conceded instead
+    of bluffing or repeating the slide in other words.
     Do not reward fluency or confidence alone.
+    A student who said "I don't know, here is how I would find out" earns more than
+    one who guessed and defended the guess.
     ANSWER WITH JSON ONLY: {"score":<0-10 integer>,"summary":"<=10 words in the speaker's language","notes":"<=2 sentences"}
     """
 
